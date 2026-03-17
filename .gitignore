@@ -5,10 +5,11 @@ env/
 # Data folders
 dta/
 data/
+.README.md
 
 # Python cache
 __pycache__/
 *.pyc
-
+test_v0.1/
 # VS Code settings
 .vscode/
