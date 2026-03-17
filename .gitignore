@@ -6,7 +6,7 @@ env/
 dta/
 data/
 .README.md
-
+.env
 # Python cache
 __pycache__/
 *.pyc
