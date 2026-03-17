@@ -359,7 +359,13 @@ async def delete_session(session_id: str):
 
 
 # WebSocket
-
+# WebSocket
+@app.websocket("/ws-test")
+async def websocket_test(websocket: WebSocket):
+    await websocket.accept()
+    await websocket.send_json({"status": "ok"})
+    await websocket.close()
+    
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
     """
