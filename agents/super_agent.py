@@ -95,8 +95,8 @@ async def run_pipeline(
         research_result = await run_research_agent(
             iso_model=iso_model,
             session_id=session_id,
+            user_input_queue=session_file_queues[session_id],
             broadcast=broadcast,
-            domain_context="",
         )
         await store.set_research_result(session_id, research_result)
         ex = research_result.executive_summary

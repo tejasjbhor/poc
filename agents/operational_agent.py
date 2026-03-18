@@ -15,7 +15,7 @@ from langchain_core.callbacks import AsyncCallbackHandler
 from langchain_core.prompts import PromptTemplate
 import structlog
 
-from schemas.models import AgentEvent, AgentName, AgentStatus, ISO15926Model, ISO15926Meta
+from schemas.models import AgentEvent, AgentName, AgentStatus
 from tools.agent_tools import extract_pdf_text, extract_pdf_sections, get_iso15926_schema
 from utils.config import get_settings
 

@@ -236,67 +236,6 @@ def coerce_json(text: str) -> Any:
             raise
         return json.loads(m.group())
 
-
-def _build_step2_payload(iso_model: ISO15926Model) -> Dict[str, Any]:
-    """Build a bounded JSON payload from our ISO model for Step 2."""
-    reqs = iso_model.get_requirements()
-    active_domains = sorted(
-        {
-            (r.requirement_type.value if getattr(r, "requirement_type", None) else "unknown")
-            for r in reqs
-            if getattr(r, "requirement_type", None)
-        }
-    )
-    constraints = []
-    uncertainties = []
-
-    for r in reqs[:25]:
-        # Keep these short to avoid huge prompts.
-        if r.rationale:
-            constraints.append(str(r.rationale)[:250])
-        else:
-            uncertainties.append(f"Missing rationale for {r.req_id or 'UNKNOWN'}")
-
-    # Deduplicate while preserving order
-    def _dedupe(items: List[str]) -> List[str]:
-        seen = set()
-        out = []
-        for x in items:
-            if x in seen:
-                continue
-            seen.add(x)
-            out.append(x)
-        return out
-
-    constraints = _dedupe([c for c in constraints if c])
-    uncertainties = _dedupe(uncertainties[:10])
-
-    example_items = []
-    for r in reqs[:3]:
-        example_items.append(
-            {
-                "req_id": r.req_id,
-                "statement": (r.statement or r.req_id or "")[:300],
-                "domain_tag": (r.requirement_type.value if getattr(r, "requirement_type", None) else None),
-                "function_name": r.function_id,
-                "priority": r.priority,
-                "rationale": (r.rationale or "")[:300],
-            }
-        )
-
-    return {
-        "meta": iso_model.meta.model_dump() if hasattr(iso_model.meta, "model_dump") else {},
-        "counts": {
-            "requirements": len(reqs),
-            "entities": len(iso_model.entities or []),
-        },
-        "active_domains": active_domains,
-        "constraints_sample": constraints[:25],
-        "uncertainties_sample": uncertainties[:10],
-        "example_items": example_items,
-    }
-
-
 def _build_step4_filter_prompt(understanding_json: str, candidates_json: str) -> str:
     """Prompt from notebook build_step4_filter_prompt (adapted for our candidate shape)."""
     return f"""You are a research agent evaluating candidate solutions.
@@ -448,161 +387,15 @@ async def _rank_technologies_step4(
         record.top_tech_vendor = ranked_techs[0].vendor if ranked_techs else None
         record.top_tech_trl = ranked_techs[0].trl.value if ranked_techs else None
 
-
-# Agent builder
-
-def _build_executor(session_id: str, req_id: str,
-                    broadcast: BroadcastFn) -> AgentExecutor:
-    if not _LANGCHAIN_AGENT_AVAILABLE:
-        raise RuntimeError(
-            "LangChain agent stack is not available in this environment; "
-            "cannot run per-requirement ReAct research. "
-            "Run with no ANTHROPIC_API_KEY (mock mode) or fix LangChain/langgraph versions."
-        )
-    llm = ChatAnthropic(
-        model=cfg.anthropic_model,
-        api_key=cfg.anthropic_api_key,
-        max_tokens=4096,
-        temperature=0.2,
-    )
-    tools = [
-        classify_requirement_json,
-        search_web_ddg,
-        search_arxiv,
-        fetch_page_content,
-        build_research_record,
-    ]
-    prompt = PromptTemplate.from_template(_REACT_TEMPLATE).partial(
-        system=_SYSTEM,
-    )
-    agent = create_react_agent(llm=llm, tools=tools, prompt=prompt)
-    return AgentExecutor(
-        agent=agent,
-        tools=tools,
-        verbose=False,
-        max_iterations=cfg.max_agent_iterations,
-        handle_parsing_errors=True,
-        callbacks=[ResearchCallback(session_id, req_id, broadcast)],
-    )
-
-
-# Parse one record from agent output
-
-def _parse_record(raw: str, req: EngineeringConstraint,
-                  function_name: str) -> RequirementResearchRecord:
-    """Parse the JSON returned by build_research_record into a typed record."""
-    try:
-        cleaned = raw.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.split("```")[1]
-            if cleaned.startswith("json"):
-                cleaned = cleaned[4:]
-        cleaned = cleaned.strip()
-
-        outer = json.loads(cleaned)
-        # build_research_record returns {"status": "ok", "record": {...}}
-        data = outer.get("record", outer)
-
-        # Parse nested standards
-        stds = []
-        for s in data.get("standards", []):
-            try:
-                stds.append(StandardMatch(**s))
-            except Exception:
-                stds.append(StandardMatch(
-                    name=s.get("name", "Unknown"),
-                    similarity_score=float(s.get("similarity_score", 0)),
-                ))
-
-        # Parse nested technologies
-        techs = []
-        for t in data.get("technologies", []):
-            trl_val = t.get("trl", "unknown")
-            # Normalise TRL string
-            try:
-                trl_enum = TRL(trl_val)
-            except ValueError:
-                # Try mapping "9" → "TRL 9"
-                try:
-                    trl_enum = TRL(f"TRL {trl_val}")
-                except ValueError:
-                    trl_enum = TRL.UNKNOWN
-            try:
-                techs.append(TechnologyMatch(
-                    name=t.get("name", ""),
-                    vendor=t.get("vendor"),
-                    trl=trl_enum,
-                    description=t.get("description", ""),
-                    deployment_examples=t.get("deployment_examples"),
-                    source_url=t.get("source_url"),
-                    limitations=t.get("limitations"),
-                ))
-            except Exception:
-                pass
-
-        # Gap severity
-        score = float(data.get("best_similarity_score", 0.0))
-        if not stds:
-            severity = GapSeverity.NO_MATCH
-        elif score >= 0.80:
-            severity = GapSeverity.COVERED
-        elif score >= 0.50:
-            severity = GapSeverity.PARTIAL
-        else:
-            severity = GapSeverity.GAP
-
-        best_std = max(stds, key=lambda s: s.similarity_score) if stds else None
-
-        return RequirementResearchRecord(
-            req_id=req.req_id or data.get("req_id", ""),
-            req_statement=req.statement or data.get("req_statement", ""),
-            requirement_type=(req.requirement_type.value
-                              if req.requirement_type else
-                              data.get("requirement_type", "unknown")),
-            function_name=function_name or data.get("function_name"),
-            rationale=req.rationale or data.get("rationale"),
-            is_assumption=req.is_assumption,
-            criticality=data.get("criticality", "medium"),
-            domain_tag=data.get("domain_tag"),
-            standards=stds,
-            best_standard=best_std.name if best_std else None,
-            best_standard_clause=best_std.clause if best_std else None,
-            best_standard_excerpt=best_std.verbatim_excerpt if best_std else None,
-            best_similarity_score=best_std.similarity_score if best_std else 0.0,
-            technologies=techs,
-            top_technology=techs[0].name if techs else None,
-            top_tech_vendor=techs[0].vendor if techs else None,
-            top_tech_trl=techs[0].trl.value if techs else None,
-            gap_severity=severity,
-            gap_description=data.get("gap_description", ""),
-            uncovered_aspects=data.get("uncovered_aspects", []),
-            recommendation=data.get("recommendation", ""),
-            all_source_urls=data.get("all_source_urls", []),
-            search_queries_used=data.get("search_queries_used", []),
-            researched_at=datetime.now(timezone.utc).isoformat(),
-        )
-
-    except Exception as exc:
-        log.error("research_record.parse_failed", req_id=req.req_id, exc=str(exc))
-        # Return a minimal record rather than crashing the whole pipeline
-        return RequirementResearchRecord(
-            req_id=req.req_id or "UNKNOWN",
-            req_statement=req.statement or "",
-            requirement_type=req.requirement_type.value if req.requirement_type else "unknown",
-            function_name=function_name,
-            gap_severity=GapSeverity.NO_MATCH,
-            gap_description=f"Research failed: {exc}",
-            recommendation="Manual research required.",
-        )
-
-
 # Public runner
 
 async def run_research_agent(
-    iso_model: ISO15926Model,
+    iso_model: Any[dict],
     session_id: str,
+    user_input_queue: asyncio.Queue,
     broadcast: BroadcastFn,
-    domain_context: str = "",
+    timeout: float = 300.0,
+    poll_interval: float = 0.5,
 ) -> ResearchResult:
     """
     Run per-requirement deep research for all requirements in the ISO model.
@@ -611,21 +404,28 @@ async def run_research_agent(
     function runs in a lightweight mock mode and returns an empty
     `ResearchResult` instead of calling external LLM tools.
     """
-    requirements = iso_model.get_requirements()
-    total = len(requirements)
 
     await broadcast(session_id, AgentEvent(
-        session_id=session_id, agent=AgentName.RESEARCH,
-        step="starting", status=AgentStatus.RUNNING,
-        payload={"total_requirements": total,
-                 "standard": iso_model.meta.standard},
-    ).to_ws())
+            session_id=session_id,
+            agent=AgentName.RESEARCH,
+            step="started",
+            status=AgentStatus.RUNNING,
+            payload={"note": "Research Agent Started."}
+        ).to_ws())
 
     # Step 2 (system understanding) must happen once per session.
     # We pause here until the frontend sends: {"type":"confirm_step2"}.
     #
     # Note: if no LLM key is configured, we still broadcast a best-effort
     # understanding and wait for confirmation (if the session store exists).
+    await broadcast(session_id, AgentEvent(
+            session_id=session_id,
+            agent=AgentName.RESEARCH,
+            step="started",
+            status=AgentStatus.PENDING,
+            payload={"note": "Sending system description to LLM for analysis."}
+        ).to_ws())
+
     system_understanding: Dict[str, Any] = {}
     confirmed_step2 = False
     existing_state = await session_store.get(session_id)
@@ -649,9 +449,8 @@ async def run_research_agent(
                 max_tokens=1024,
                 temperature=0.2,
             )
-            payload = _build_step2_payload(iso_model)
             prompt = _SYSTEM_PROMPT_STEP2 + "\n\nINPUT JSON:\n" + json.dumps(
-                payload, indent=2, ensure_ascii=False
+                iso_model, indent=2, ensure_ascii=False
             )
             resp = await llm_step2.ainvoke([HumanMessage(content=prompt)])
             try:
@@ -661,45 +460,87 @@ async def run_research_agent(
             except Exception:
                 system_understanding = {}
 
-        if not system_understanding:
-            # Deterministic fallback when Step 2 can't be generated.
-            active_domains = sorted(
-            {
-                (r.requirement_type.value if getattr(r, "requirement_type", None) else "unknown")
-                for r in requirements
-                if getattr(r, "requirement_type", None)
-            }
-            )
-            system_understanding = {
-                "function": "Summarize system understanding from provided ISO15926 model",
-                "domain": iso_model.meta.standard or "unknown",
-                "active_domains": active_domains,
-                "constraints": [],
-                "uncertainties": [
-                    "LLM unavailable or returned unparseable JSON; please confirm manually."
-                ],
-            }
+        await broadcast(session_id, AgentEvent(
+                session_id=session_id,
+                agent=AgentName.RESEARCH,
+                step="started",
+                status=AgentStatus.RUNNING,
+                payload={"note": "Got LLM response."}
+            ).to_ws())
 
         await broadcast(session_id, AgentEvent(
             session_id=session_id,
             agent=AgentName.RESEARCH,
-            step="step2_needs_confirmation",
-            status=AgentStatus.RUNNING,
-            payload={"system_understanding": system_understanding},
+            step="request_user_input",
+            status=AgentStatus.WAITING_FOR_USER_INPUT,
+            payload = {
+                "type": "user_input_request",
+                "input_type": "validation",
+                "label": "Validate generated data",
+                "instructions": "Please review the generated structure and approve to continue.",
+                "data": system_understanding,  # 👈 the structured JSON to display
+                "ui_hint": {
+                    "render_as": "validation",
+                    "actions": ["approve"],
+                    "primary_action": "approve",
+                    "approve_label": "Approve and continue"
+                }
+            }
         ).to_ws())
 
-        # Poll for confirmation event.
-        deadline = time.monotonic() + 10 * 60  # 10 minutes
-        while time.monotonic() < deadline:
-            state = await session_store.get(session_id)
-            if state:
-                for ev in state.events:
-                    if ev.agent == AgentName.RESEARCH and ev.step == "step2_confirmed":
-                        confirmed_step2 = True
-                        break
-            if confirmed_step2:
+        while not user_input_queue.empty():
+            try:
+                user_input_queue.get_nowait()
+            except asyncio.QueueEmpty:
                 break
-            await asyncio.sleep(2.0)
+            
+        # Poll for confirmation event.
+        # Step: wait for validation input
+        elapsed = 0.0
+        input_data = None
+
+        while input_data is None:
+            try:
+                input_data = user_input_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                if elapsed >= timeout:
+                    break
+                await asyncio.sleep(poll_interval)
+                elapsed += poll_interval
+
+        # Handle timeout
+        if input_data is None:
+            await broadcast(session_id, AgentEvent(
+                session_id=session_id,
+                agent=AgentName.RESEARCH,
+                step="step2_timeout",
+                status=AgentStatus.FAILED,
+                payload={"note": "Timed out waiting for user validation. Proceeding best-effort."},
+            ).to_ws())
+
+        else:
+            # Handle validation response
+            if input_data.get("type") == "validation" and input_data.get("action") == "approve":
+
+                await broadcast(session_id, AgentEvent(
+                    session_id=session_id,
+                    agent=AgentName.RESEARCH,
+                    step="step2_confirmed",
+                    status=AgentStatus.RUNNING,
+                    payload={"note": "User approved the data. Continuing..."},
+                ).to_ws())
+
+                confirmed_step2 = True
+
+            else:
+                # Unexpected input
+                await broadcast(session_id, AgentEvent(
+                    session_id=session_id,
+                    agent=AgentName.RESEARCH,
+                    step="step2_invalid_input",
+                    status=AgentStatus.FAILED,
+                    payload={"note": "Invalid input received for validation step."},
+                ).to_ws())
 
         if not confirmed_step2:
             await broadcast(session_id, AgentEvent(
@@ -710,34 +551,17 @@ async def run_research_agent(
                 payload={"note": "Timed out waiting for frontend confirmation. Proceeding best-effort."},
             ).to_ws())
 
-    log.info("research_agent.starting", session_id=session_id, requirements=total)
 
-    # Mock mode:
-    # - no LLM configured, OR
-    # - LangChain ReAct agent stack unavailable (langgraph mismatch).
-    # We already handled Step 2 above, so we can safely return an empty result.
-    if not cfg.anthropic_api_key or not _LANGCHAIN_AGENT_AVAILABLE:
-        result = ResearchResult(
-            session_id=session_id,
-            source_standard=iso_model.meta.standard,
-            source_document=iso_model.meta.source_document,
-            records=[],
-        )
-        await broadcast(session_id, AgentEvent(
-            session_id=session_id,
-            agent=AgentName.RESEARCH,
-            step="completed_mock",
-            status=AgentStatus.COMPLETED,
-            payload={
-                "note": (
-                    "Research agent running in mock mode "
-                    "(no LLM configured or LangChain agent stack unavailable)"
-                ),
-                "total": total,
-            },
-        ).to_ws())
-        log.info("research_agent.completed_mock", session_id=session_id)
-        return result
+        if not confirmed_step2:
+            await broadcast(session_id, AgentEvent(
+                session_id=session_id,
+                agent=AgentName.RESEARCH,
+                step="step2_timeout",
+                status=AgentStatus.FAILED,
+                payload={"note": "Timed out waiting for frontend confirmation. Proceeding best-effort."},
+            ).to_ws())
+
+    log.info("research_agent.starting", session_id=session_id)
 
     records: List[RequirementResearchRecord] = []
 
@@ -749,91 +573,9 @@ async def run_research_agent(
         temperature=0.2,
     )
 
-    for idx, req in enumerate(requirements, 1):
-        req_id = req.req_id or f"REQ-{idx:03d}"
-        function_name = iso_model.get_function_name(req.function_id)
-
-        await broadcast(session_id, AgentEvent(
-            session_id=session_id, agent=AgentName.RESEARCH,
-            step=f"researching_{req_id}",
-            status=AgentStatus.RUNNING,
-            payload={
-                "req_id": req_id,
-                "progress": f"{idx}/{total}",
-                "type": req.requirement_type.value if req.requirement_type else "unknown",
-            },
-        ).to_ws())
-
-        executor = _build_executor(session_id, req_id, broadcast)
-
-        try:
-            result = await executor.ainvoke({
-                "req_id": req_id,
-                "req_statement": req.statement or req.name,
-                "requirement_type": req.requirement_type.value if req.requirement_type else "unknown",
-                "rationale": req.rationale or "",
-                "function_name": function_name or "",
-                "domain_context": domain_context or iso_model.meta.standard,
-                "agent_scratchpad": "",
-            })
-
-            raw = result.get("output", "{}")
-            record = _parse_record(raw, req, function_name)
-
-            # Notebook Step 4: rank/enrich technologies for this requirement record.
-            try:
-                await _rank_technologies_step4(
-                    llm=llm_step4,
-                    system_understanding=system_understanding or {},
-                    record=record,
-                    req=req,
-                )
-            except Exception as exc:
-                log.warning("research_agent.step4_rank_failed",
-                            session_id=session_id, req_id=req_id, exc=str(exc))
-
-            records.append(record)
-
-            await broadcast(session_id, AgentEvent(
-                session_id=session_id, agent=AgentName.RESEARCH,
-                step=f"done_{req_id}",
-                status=AgentStatus.RUNNING,
-                payload={
-                    "req_id": req_id,
-                    "gap_severity": record.gap_severity.value,
-                    "standards_found": len(record.standards),
-                    "technologies_found": len(record.technologies),
-                    "best_score": round(record.best_similarity_score, 3),
-                    "progress": f"{idx}/{total}",
-                },
-            ).to_ws())
-
-        except Exception as exc:
-            log.error("research_agent.req_failed",
-                      session_id=session_id, req_id=req_id, exc=str(exc))
-            # Non-fatal: add a no-match record and continue
-            records.append(RequirementResearchRecord(
-                req_id=req_id,
-                req_statement=req.statement or req.name,
-                requirement_type=req.requirement_type.value if req.requirement_type else "unknown",
-                function_name=function_name,
-                gap_severity=GapSeverity.NO_MATCH,
-                gap_description=f"Research error: {exc}",
-                recommendation="Manual research required.",
-            ))
-            await broadcast(session_id, AgentEvent(
-                session_id=session_id, agent=AgentName.RESEARCH,
-                step=f"error_{req_id}",
-                status=AgentStatus.RUNNING,
-                error=str(exc),
-                payload={"req_id": req_id, "progress": f"{idx}/{total}"},
-            ).to_ws())
-
     # ── Assemble final result ─────────────────────────────────────────────
     result = ResearchResult(
         session_id=session_id,
-        source_standard=iso_model.meta.standard,
-        source_document=iso_model.meta.source_document,
         records=records,
     )
     result.build_summary_table()
@@ -843,6 +585,7 @@ async def run_research_agent(
         session_id=session_id, agent=AgentName.RESEARCH,
         step="completed", status=AgentStatus.COMPLETED,
         payload={
+            "note": "Search completed. Showing Results",
             "total": len(records),
             "covered": result.executive_summary.covered if result.executive_summary else 0,
             "partial": result.executive_summary.partial if result.executive_summary else 0,

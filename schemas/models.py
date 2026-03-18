@@ -297,8 +297,6 @@ class SummaryTableRow(BaseModel):
 class ResearchResult(BaseModel):
     """Root object returned by /api/v1/sessions/{id}/research"""
     session_id: str
-    source_standard: str                # from ISO model meta
-    source_document: Optional[str]
     records: List[RequirementResearchRecord] = Field(default_factory=list)
     summary_table: List[SummaryTableRow] = Field(default_factory=list)
     executive_summary: Optional[ExecutiveSummary] = None

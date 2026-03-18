@@ -228,18 +228,22 @@ async def upload_input(session_id: str, request: Request, file: UploadFile = Non
 
     if file:
         content = await file.read()
-        data = {
+        await session_file_queues[session_id].put({
             "type": "file",
             "content": content.decode("utf-8")
-        }
+        })
     else:
         body = await request.json()
-        data = {
-            "type": "text",
-            "content": body.get("content")
-        }
-
-    await session_file_queues[session_id].put(data)
+        if body.get("type") == "text":
+            await session_file_queues[session_id].put({
+                "type": "text",
+                "content": body.get("content", "")
+            })
+        elif body.get("type") == "validation":
+            await session_file_queues[session_id].put({
+                "type": "validation",
+                "action": body.get("action")
+            })
 
     return {"status": "ok"}
 
