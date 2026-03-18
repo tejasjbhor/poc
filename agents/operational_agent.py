@@ -6,6 +6,8 @@ import json
 from datetime import datetime, timezone
 from typing import Callable, Coroutine
 
+import asyncio
+
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_anthropic import ChatAnthropic
 from langchain_core.callbacks import AsyncCallbackHandler
@@ -128,123 +130,79 @@ PDF bytes (hex): {pdf_hex}
 Domain context: {domain_context}
 {agent_scratchpad}"""
 
-
-# Agent builder
-
-def _build_executor(session_id: str, broadcast: BroadcastFn,
-                    filename: str) -> AgentExecutor:
-    llm = ChatAnthropic(
-        model=cfg.anthropic_model,
-        api_key=cfg.anthropic_api_key,
-        max_tokens=8192,
-        temperature=0.1,
-    )
-    tools = [extract_pdf_text, extract_pdf_sections, get_iso15926_schema]
-    prompt = PromptTemplate.from_template(_REACT_TEMPLATE).partial(
-        system=_SYSTEM.format(filename=filename),
-        filename=filename,
-    )
-    agent = create_react_agent(llm=llm, tools=tools, prompt=prompt)
-    return AgentExecutor(
-        agent=agent,
-        tools=tools,
-        verbose=False,
-        max_iterations=cfg.max_agent_iterations,
-        handle_parsing_errors=True,
-        callbacks=[OperationalCallback(session_id, broadcast)],
-    )
-
-
 # Public runner
 
 async def run_operational_agent(
-    pdf_bytes: bytes,
-    filename: str,
     session_id: str,
     broadcast: BroadcastFn,
-    domain_context: str = "",
 ) -> ISO15926Model:
     """
-    For early API testing, this function falls back to a lightweight
-    placeholder implementation when no Anthropic API key is configured.
+    Operational agent without file input, using preloaded/mock data.
     """
 
-    await broadcast(session_id, AgentEvent(
-        session_id=session_id, agent=AgentName.OPERATIONAL,
-        step="starting", status=AgentStatus.RUNNING,
-        payload={"filename": filename, "bytes": len(pdf_bytes)},
-    ).to_ws())
-
-    
-    if not cfg.anthropic_api_key:
-        meta = ISO15926Meta(source_document=filename)
-        model = ISO15926Model(meta=meta, entities=[], relationships=[], properties=[])
-        await broadcast(session_id, AgentEvent(
-            session_id=session_id, agent=AgentName.OPERATIONAL,
-            step="completed_mock", status=AgentStatus.COMPLETED,
-            payload={
-                "note": "Operational agent running in mock mode (no LLM configured)",
-                "entities": 0,
-                "relationships": 0,
-                "requirements": 0,
-            },
-        ).to_ws())
-        log.info("operational_agent.completed_mock", session_id=session_id)
-        return model
-
-    executor = _build_executor(session_id, broadcast, filename)
-
-    # Hex-encode PDF; cap at ~5 MB raw (10 MB hex) to stay within context , for test only 
-    pdf_hex = pdf_bytes.hex()[:10_000_000]
-
-    result = await executor.ainvoke({
-        "pdf_hex": pdf_hex,
-        "domain_context": domain_context or "",
-        "agent_scratchpad": "",
-    })
-
-    raw = result.get("output", "")
-    log.info("operational_agent.raw_output", session_id=session_id,
-             chars=len(raw))
-
-    # ── Parse + validate ──────────────────────────────────────────────────
     try:
-        cleaned = raw.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.split("```")[1]
-            if cleaned.startswith("json"):
-                cleaned = cleaned[4:]
-        cleaned = cleaned.strip()
-
-        data = json.loads(cleaned)
-        # Ensure meta block exists
-        data.setdefault("meta", {})
-        data["meta"].setdefault("exported_at", datetime.now(timezone.utc).isoformat())
-        data["meta"].setdefault("source_document", filename)
-        data["meta"].setdefault("generated_by", "operational_agent")
-
-        model = ISO15926Model.model_validate(data)
-
-        req_count = len(model.get_requirements())
         await broadcast(session_id, AgentEvent(
             session_id=session_id, agent=AgentName.OPERATIONAL,
-            step="completed", status=AgentStatus.COMPLETED,
+            step="started", status=AgentStatus.RUNNING,
+            payload={"note": "Operational Agent Started"}
+        ).to_ws())
+        
+        # Step 2: got data (mock)
+        await broadcast(session_id, AgentEvent(
+            session_id=session_id,
+            agent=AgentName.OPERATIONAL,
+            step="got_data",
+            status=AgentStatus.RUNNING,
+            payload={"note": "Using preloaded mock data"}
+        ).to_ws())
+        
+        # Step 2.5: analyzing system data
+        await broadcast(session_id, AgentEvent(
+            session_id=session_id,
+            agent=AgentName.OPERATIONAL,
+            step="analyzing_system_data",
+            status=AgentStatus.RUNNING,
+            payload={"note": "Processing system description..."}
+        ).to_ws())
+
+        await asyncio.sleep(5)
+        
+        meta = ISO15926Meta(source_document="mock_document")
+        model = ISO15926Model(meta=meta, entities=[], relationships=[], properties=[])
+        
+        await broadcast(session_id, AgentEvent(
+            session_id=session_id, agent=AgentName.OPERATIONAL,
+            step="system_description_ready", status=AgentStatus.RUNNING,
             payload={
-                "entities": len(model.entities),
-                "relationships": len(model.relationships),
-                "requirements": req_count,
-            },
+            "note": "System Description Ready",
+            "entities": len(model.entities),
+            "relationships": len(model.relationships),
+            "requirements": len(model.get_requirements()),
+            }
         ).to_ws())
-
-        log.info("operational_agent.completed", session_id=session_id,
-                 entities=len(model.entities), requirements=req_count)
-        return model
-
-    except Exception as exc:
-        log.error("operational_agent.parse_failed",
-                  session_id=session_id, exc=str(exc))
+        
+        # Step 4: finished
         await broadcast(session_id, AgentEvent(
-            session_id=session_id, agent=AgentName.OPERATIONAL,
-            step="parse_failed", status=AgentStatus.FAILED, error=str(exc),
+            session_id=session_id,
+            agent=AgentName.OPERATIONAL,
+            step="finished",
+            status=AgentStatus.COMPLETED,
+            payload={"note": "Operational Agent Finished"},
         ).to_ws())
-        raise RuntimeError(f"Operational agent output parse failed: {exc}") from exc
+        
+        return model
+    
+    except Exception as exc:
+        await broadcast(session_id, AgentEvent(
+            session_id=session_id,
+            agent=AgentName.OPERATIONAL,
+            step="failed",
+            status=AgentStatus.FAILED,
+            payload={"note": "Operational Agent Failed"},
+            error=str(exc)
+        ).to_ws())
+        raise
+
+
+        
+        
