@@ -422,7 +422,7 @@ async def run_research_agent(
             session_id=session_id,
             agent=AgentName.RESEARCH,
             step="started",
-            status=AgentStatus.PENDING,
+            status=AgentStatus.RUNNING,
             payload={"note": "Sending system description to LLM for analysis."}
         ).to_ws())
 
