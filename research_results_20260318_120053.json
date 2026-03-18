@@ -1,0 +1,585 @@
+{
+  "generated_at": "2026-03-18T11:00:53.743048+00:00",
+  "project": {},
+  "total_researched": 1,
+  "records": [
+    {
+      "type": "system_candidates_enriched",
+      "understanding": {
+        "function": "Nuclear fuel reprocessing system for extracting fissile material (uranium and plutonium) from spent nuclear fuel waste, capable of processing multiple fuel types (UOX, MOX, ERU/REU) with 1800 tHM/year capacity",
+        "domain": "Nuclear fuel cycle - spent fuel reprocessing and fissile material recovery",
+        "active_domains": [
+          "Nuclear engineering",
+          "Radiological safety",
+          "Process engineering",
+          "Regulatory compliance",
+          "Quality control"
+        ],
+        "constraints": [
+          "ALARA radiation protection principle",
+          "High operational availability requirements",
+          "1800 tHM/year processing capacity",
+          "Product purity standards for downstream fuel fabrication",
+          "Radiological containment during operations",
+          "Multi-fuel type processing capability",
+          "French jurisdiction regulatory compliance"
+        ],
+        "uncertainties": [
+          "Specific technical processes and equipment details not defined",
+          "Exact safety and regulatory requirements beyond ALARA principle",
+          "Interface specifications with upstream waste reception and downstream fuel fabrication systems",
+          "Detailed operational parameters and control systems",
+          "Emergency response and accident scenarios not described",
+          "Waste management for non-recoverable materials",
+          "Maintenance procedures in radioactive environment"
+        ]
+      },
+      "candidates": [
+        {
+          "name": "PUREX Process",
+          "description": "Plutonium Uranium Redox Extraction process - the dominant nuclear fuel reprocessing technology worldwide using tributyl phosphate (TBP) for selective recovery of uranium and plutonium through multiple chemical separation stages",
+          "source": "https://www.semanticscholar.org/paper/a3bb53801a16d4318463704eaacd37257cdd7526",
+          "domain": "Nuclear fuel cycle - spent fuel reprocessing",
+          "function_alignment": "Direct match - designed for uranium and plutonium extraction from spent nuclear fuel with industrial scale capability",
+          "notes": "Most established technology, uses TBP extractant, capable of processing UOX and MOX fuels",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/a3bb53801a16d4318463704eaacd37257cdd7526",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "Tributyl Phosphate (TBP) Solvent Extraction System",
+          "description": "Key extractant used in nuclear fuel reprocessing for selective separation of actinides, typically dissolved in kerosene diluent for liquid-liquid extraction processes",
+          "source": "https://www.semanticscholar.org/paper/1554c5371505398e1dda6d003017d81d0629cc20",
+          "domain": "Chemical separation technology",
+          "function_alignment": "Core technology component - primary extractant for uranium and plutonium separation with proven industrial application",
+          "notes": "Well-established chemistry, high extraction efficiency, compatible with multiple fuel types",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/1554c5371505398e1dda6d003017d81d0629cc20",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "Alternative Diluent Systems (Undecanones)",
+          "description": "Advanced diluent systems using 2-undecanone as alternative to traditional kerosene for various extraction ligands including TBP, offering improved extraction properties",
+          "source": "https://www.semanticscholar.org/paper/d4477830a1ff2d1e276243e226b92cf63b719dfb",
+          "domain": "Solvent extraction chemistry",
+          "function_alignment": "Process enhancement - improved extraction efficiency for uranium and plutonium recovery",
+          "notes": "Newer technology with potential for higher extraction performance than conventional systems",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/d4477830a1ff2d1e276243e226b92cf63b719dfb",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "Direct Oxide Dissolution in Organic Solvents",
+          "description": "Alternative reprocessing approach involving direct dissolution of actinide oxides in tributyl phosphate, eliminating aqueous dissolution step and reducing facility requirements",
+          "source": "https://www.semanticscholar.org/paper/9de062cb7acbb232d95c489c5fcbb57a6cc80926",
+          "domain": "Advanced reprocessing technology",
+          "function_alignment": "Alternative approach - potentially more efficient process for uranium and plutonium recovery with reduced facility size",
+          "notes": "Emerging technology that could reduce nitrate requirements and simplify process flowsheet",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/9de062cb7acbb232d95c489c5fcbb57a6cc80926",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "Enhanced Selectivity Systems with AHA",
+          "description": "PUREX process enhancement using acetohydroxamic acid (AHA) to improve selectivity in uranium and plutonium separation, with TBP extraction for acid recovery",
+          "source": "https://www.semanticscholar.org/paper/55418d28a2eb2135c877210630f13321b76ae154",
+          "domain": "Process chemistry optimization",
+          "function_alignment": "Process improvement - enhanced selectivity for fissile material recovery in reprocessing operations",
+          "notes": "Addresses chemical equilibrium issues and extraction efficiency optimization",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/55418d28a2eb2135c877210630f13321b76ae154",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "Advanced Amide Extractants (DEHBA/DEHiBA)",
+          "description": "Specialized extractant ligands N,N-di-(2-ethylhexyl)butyramide and N,N-di-2-ethylhexylisobutryamide developed for uranium recovery with improved radiation resistance",
+          "source": "https://www.semanticscholar.org/paper/ddf4856f97fc9905c7424f270c553b34fedfe6c2",
+          "domain": "Advanced extraction chemistry",
+          "function_alignment": "Alternative extractant technology - designed for uranium recovery from spent nuclear fuel with enhanced radiation stability",
+          "notes": "Developed for high-radiation environments, potential alternative to TBP systems",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/ddf4856f97fc9905c7424f270c553b34fedfe6c2",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "Uranium-Lanthanide Co-extraction Systems",
+          "description": "Direct extraction technology for simultaneous recovery of uranium and lanthanide oxides using tributyl phosphate, applicable to mixed oxide fuel processing",
+          "source": "https://www.semanticscholar.org/paper/4b3cdebedf16e3653544505d85acce716ef6e6de",
+          "domain": "Mixed fuel reprocessing",
+          "function_alignment": "Specialized application - suitable for MOX fuel processing with simultaneous actinide and lanthanide recovery",
+          "notes": "Relevant for MOX fuel reprocessing capability requirement",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/4b3cdebedf16e3653544505d85acce716ef6e6de",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "PUREX (Plutonium Uranium Redox Extraction) Process",
+          "description": "Established aqueous reprocessing technology using tributyl phosphate (TBP) in kerosene to separate uranium and plutonium from fission products through solvent extraction. Widely implemented at industrial scale including La Hague facility.",
+          "source": "https://www.iaea.org/publications/10884/spent-fuel-reprocessing-options",
+          "domain": "Nuclear fuel cycle - aqueous reprocessing",
+          "function_alignment": "Direct - primary industrial method for uranium/plutonium extraction from spent fuel with proven multi-fuel capability",
+          "notes": "Most mature technology for large-scale reprocessing, forms basis of most commercial facilities",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.iaea.org/publications/10884/spent-fuel-reprocessing-options",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "COEX (Co-Extraction) Process",
+          "description": "Modified PUREX process that co-extracts uranium and plutonium together rather than separately, designed to reduce proliferation risks while maintaining reprocessing capability for MOX fuel cycles.",
+          "source": "https://www.cea.fr/english/Pages/News/coex-process-nuclear-fuel-recycling.aspx",
+          "domain": "Nuclear fuel cycle - proliferation-resistant reprocessing",
+          "function_alignment": "High - specifically designed for MOX fuel reprocessing with enhanced security features",
+          "notes": "Developed by CEA France, addresses proliferation concerns while maintaining commercial viability",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.cea.fr/english/Pages/News/coex-process-nuclear-fuel-recycling.aspx",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "UREX+ Process Suite",
+          "description": "Family of aqueous separation processes including UREX+1, UREX+2, UREX+3 variants for selective separation of uranium, transuranics, and fission products with varying degrees of partitioning.",
+          "source": "https://www.energy.gov/ne/nuclear-fuel-cycle-research-development/separations-and-waste-forms",
+          "domain": "Nuclear fuel cycle - advanced aqueous separations",
+          "function_alignment": "High - designed for multiple fuel types with flexible separation schemes",
+          "notes": "US DOE developed processes offering flexibility in product streams and waste minimization",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.energy.gov/ne/nuclear-fuel-cycle-research-development/separations-and-waste-forms",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "Pyroprocessing (Electrochemical Reprocessing)",
+          "description": "High-temperature electrochemical separation process using molten salt electrolytes to separate actinides from fission products, particularly suited for fast reactor fuels and proliferation-resistant operations.",
+          "source": "https://www.iaea.org/publications/13549/pyroprocessing-of-spent-nuclear-fuel",
+          "domain": "Nuclear fuel cycle - pyrochemical reprocessing",
+          "function_alignment": "Medium - alternative technology for actinide recovery, limited commercial scale experience",
+          "notes": "Inherently proliferation-resistant but requires different infrastructure than aqueous processes",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.iaea.org/publications/13549/pyroprocessing-of-spent-nuclear-fuel",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "GANEX (Grouped Actinide Extraction) Process",
+          "description": "Advanced aqueous process for co-extraction of all actinides (U, Np, Pu, Am, Cm) using novel extractants, designed for Generation IV fuel cycle applications with enhanced waste minimization.",
+          "source": "https://www.oecd-nea.org/jcms/pl_14912/ganex-process-for-actinide-partitioning",
+          "domain": "Nuclear fuel cycle - advanced partitioning",
+          "function_alignment": "Medium - research-stage process for comprehensive actinide recovery",
+          "notes": "European development program, not yet at commercial scale but addresses future fuel cycle needs",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.oecd-nea.org/jcms/pl_14912/ganex-process-for-actinide-partitioning",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!DOCTYPE html>\n<html lang=\"en\" xml:lang=\"en\" dir=\"ltr\"   >\n<head>\n  <base href=\"https://www.oecd-nea.org/\"   />\n  \n  <meta charset=\"UTF-8\" />\n  <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n  <meta name=\"Generator\" content=\"Jalios JCMS - Copyright (C) Jalios S.A. 2001 - 2026 - https://www"
+          }
+        },
+        {
+          "name": "DIAMEX-SANEX Process Combination",
+          "description": "Two-stage aqueous separation process: DIAMEX for trivalent actinide/lanthanide extraction followed by SANEX for selective actinide recovery, enabling minor actinide recycling.",
+          "source": "https://www.oecd-nea.org/jcms/pl_14910/diamex-sanex-processes",
+          "domain": "Nuclear fuel cycle - minor actinide partitioning",
+          "function_alignment": "Medium - complementary to main reprocessing for comprehensive waste management",
+          "notes": "Addresses long-term waste radiotoxicity through minor actinide separation and transmutation",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.oecd-nea.org/jcms/pl_14910/diamex-sanex-processes",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!DOCTYPE html>\n<html lang=\"en\" xml:lang=\"en\" dir=\"ltr\"   >\n<head>\n  <base href=\"https://www.oecd-nea.org/\"   />\n  \n  <meta charset=\"UTF-8\" />\n  <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n  <meta name=\"Generator\" content=\"Jalios JCMS - Copyright (C) Jalios S.A. 2001 - 2026 - https://www"
+          }
+        },
+        {
+          "name": "Fluoride Volatility Process",
+          "description": "Gas-phase separation process using fluorination to volatilize uranium as UF6 while leaving plutonium and fission products as non-volatile fluorides, offering potential for simplified remote operations.",
+          "source": "https://www.osti.gov/biblio/4367896-fluoride-volatility-processes-recovering-fissile-material-irradiated-reactor-fuels",
+          "domain": "Nuclear fuel cycle - gas-phase separations",
+          "function_alignment": "Low - limited to uranium recovery, not suitable for plutonium extraction",
+          "notes": "Historical process with limited modern application due to plutonium recovery limitations",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.osti.gov/biblio/4367896-fluoride-volatility-processes-recovering-fissile-material-irradiated-reactor-fuels",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n    \r\n    \r\n        \r\n        \r\n\r\n        \r\n            \r\n            \r\n            \r\n            \r\n            \r\n            \r\n                \r\n                \r\n                \r\n                \r\n                \r\n                \r\n                \r\n              "
+          }
+        },
+        {
+          "name": "ALSEP (Actinide Lanthanide Separation) Process",
+          "description": "Selective separation process using bis-triazinyl-pyridine (BTP) extractants for separating trivalent actinides from lanthanides, enabling minor actinide recycling in advanced fuel cycles.",
+          "source": "https://www.oecd-nea.org/jcms/pl_14914/alsep-process-development",
+          "domain": "Nuclear fuel cycle - selective actinide separation",
+          "function_alignment": "Low - specialized for minor actinide separation rather than main U/Pu recovery",
+          "notes": "Research-stage process for advanced fuel cycle applications with transmutation capability",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.oecd-nea.org/jcms/pl_14914/alsep-process-development",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!DOCTYPE html>\n<html lang=\"en\" xml:lang=\"en\" dir=\"ltr\"   >\n<head>\n  <base href=\"https://www.oecd-nea.org/\"   />\n  \n  <meta charset=\"UTF-8\" />\n  <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n  <meta name=\"Generator\" content=\"Jalios JCMS - Copyright (C) Jalios S.A. 2001 - 2026 - https://www"
+          }
+        }
+      ],
+      "enriched": [
+        {
+          "name": "PUREX Process",
+          "description": "Plutonium Uranium Redox Extraction process - the dominant nuclear fuel reprocessing technology worldwide using tributyl phosphate (TBP) for selective recovery of uranium and plutonium through multiple chemical separation stages",
+          "source": "https://www.semanticscholar.org/paper/a3bb53801a16d4318463704eaacd37257cdd7526",
+          "domain": "Nuclear fuel cycle - spent fuel reprocessing",
+          "function_alignment": "Direct match - designed for uranium and plutonium extraction from spent nuclear fuel with industrial scale capability",
+          "notes": "Most established and proven technology, currently operating at required scale worldwide including similar facilities",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/a3bb53801a16d4318463704eaacd37257cdd7526",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          },
+          "score": 95,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Direct match for function requirements - proven technology for uranium/plutonium extraction at industrial scale with multi-fuel capability. Meets all capacity and processing requirements."
+        },
+        {
+          "name": "Tributyl Phosphate (TBP) Solvent Extraction System",
+          "description": "Key extractant used in nuclear fuel reprocessing for selective separation of actinides, typically dissolved in kerosene diluent for liquid-liquid extraction processes",
+          "source": "https://www.semanticscholar.org/paper/1554c5371505398e1dda6d003017d81d0629cc20",
+          "domain": "Chemical separation technology",
+          "function_alignment": "Core technology component - primary extractant for uranium and plutonium separation with proven industrial application",
+          "notes": "Essential component of PUREX process, mature technology with extensive operational history",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/1554c5371505398e1dda6d003017d81d0629cc20",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          },
+          "score": 85,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Core component technology for the required function. Well-established chemistry with proven industrial application for uranium and plutonium separation."
+        },
+        {
+          "name": "PUREX (Plutonium Uranium Redox Extraction) Process",
+          "description": "Established aqueous reprocessing technology using tributyl phosphate (TBP) in kerosene to separate uranium and plutonium from fission products through solvent extraction. Widely implemented at industrial scale including La Hague facility.",
+          "source": "https://www.iaea.org/publications/10884/spent-fuel-reprocessing-options",
+          "domain": "Nuclear fuel cycle - aqueous reprocessing",
+          "function_alignment": "Direct - primary industrial method for uranium/plutonium extraction from spent fuel with proven multi-fuel capability",
+          "notes": "Duplicate of first entry but with specific La Hague reference, confirming applicability to French context",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.iaea.org/publications/10884/spent-fuel-reprocessing-options",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          },
+          "score": 95,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Perfect alignment with requirements - proven at 1800 tHM/year scale with multi-fuel capability. La Hague reference directly applicable to French jurisdiction."
+        },
+        {
+          "name": "COEX (Co-Extraction) Process",
+          "description": "Modified PUREX process that co-extracts uranium and plutonium together rather than separately, designed to reduce proliferation risks while maintaining reprocessing capability for MOX fuel cycles.",
+          "source": "https://www.cea.fr/english/Pages/News/coex-process-nuclear-fuel-recycling.aspx",
+          "domain": "Nuclear fuel cycle - proliferation-resistant reprocessing",
+          "function_alignment": "High - specifically designed for MOX fuel reprocessing with enhanced security features",
+          "notes": "French-developed technology specifically addressing MOX fuel reprocessing with security enhancements",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.cea.fr/english/Pages/News/coex-process-nuclear-fuel-recycling.aspx",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          },
+          "score": 80,
+          "TRL": "Medium",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Good alignment for MOX fuel processing requirement with enhanced security features. Based on proven PUREX technology but with modifications for proliferation resistance."
+        },
+        {
+          "name": "Enhanced Selectivity Systems with AHA",
+          "description": "PUREX process enhancement using acetohydroxamic acid (AHA) to improve selectivity in uranium and plutonium separation, with TBP extraction for acid recovery",
+          "source": "https://www.semanticscholar.org/paper/55418d28a2eb2135c877210630f13321b76ae154",
+          "domain": "Process chemistry optimization",
+          "function_alignment": "Process improvement - enhanced selectivity for fissile material recovery in reprocessing operations",
+          "notes": "Optimization technology that could improve product purity standards and operational efficiency",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/55418d28a2eb2135c877210630f13321b76ae154",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          },
+          "score": 75,
+          "TRL": "Medium",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Process enhancement that improves selectivity and product purity for fissile material recovery. Builds on established PUREX technology."
+        },
+        {
+          "name": "UREX+ Process Suite",
+          "description": "Family of aqueous separation processes including UREX+1, UREX+2, UREX+3 variants for selective separation of uranium, transuranics, and fission products with varying degrees of partitioning.",
+          "source": "https://www.energy.gov/ne/nuclear-fuel-cycle-research-development/separations-and-waste-forms",
+          "domain": "Nuclear fuel cycle - advanced aqueous separations",
+          "function_alignment": "High - designed for multiple fuel types with flexible separation schemes",
+          "notes": "Advanced technology offering flexibility but requiring adaptation from US development to French regulatory context",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.energy.gov/ne/nuclear-fuel-cycle-research-development/separations-and-waste-forms",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          },
+          "score": 70,
+          "TRL": "Medium",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Meets function requirements with flexible separation schemes for multiple fuel types. Less mature than PUREX but offers enhanced waste management capabilities."
+        },
+        {
+          "name": "Uranium-Lanthanide Co-extraction Systems",
+          "description": "Direct extraction technology for simultaneous recovery of uranium and lanthanide oxides using tributyl phosphate, applicable to mixed oxide fuel processing",
+          "source": "https://www.semanticscholar.org/paper/4b3cdebedf16e3653544505d85acce716ef6e6de",
+          "domain": "Mixed fuel reprocessing",
+          "function_alignment": "Specialized application - suitable for MOX fuel processing with simultaneous actinide and lanthanide recovery",
+          "notes": "Specialized for MOX fuels but incomplete solution for full fissile material recovery requirements",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/4b3cdebedf16e3653544505d85acce716ef6e6de",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          },
+          "score": 65,
+          "TRL": "Medium",
+          "feasibility": "Medium",
+          "realism": "Realistic",
+          "gap_analysis": "Addresses MOX fuel processing requirement but focuses on uranium recovery rather than comprehensive uranium/plutonium extraction. Specialized application with limited scope."
+        },
+        {
+          "name": "Alternative Diluent Systems (Undecanones)",
+          "description": "Advanced diluent systems using 2-undecanone as alternative to traditional kerosene for various extraction ligands including TBP, offering improved extraction properties",
+          "source": "https://www.semanticscholar.org/paper/d4477830a1ff2d1e276243e226b92cf63b719dfb",
+          "domain": "Solvent extraction chemistry",
+          "function_alignment": "Process enhancement - improved extraction efficiency for uranium and plutonium recovery",
+          "notes": "Promising enhancement technology but requires significant development and validation for industrial scale",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/d4477830a1ff2d1e276243e226b92cf63b719dfb",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          },
+          "score": 60,
+          "TRL": "Low",
+          "feasibility": "Medium",
+          "realism": "Realistic",
+          "gap_analysis": "Process enhancement component that could improve extraction efficiency but requires integration with established reprocessing systems. Limited industrial experience."
+        },
+        {
+          "name": "Advanced Amide Extractants (DEHBA/DEHiBA)",
+          "description": "Specialized extractant ligands N,N-di-(2-ethylhexyl)butyramide and N,N-di-2-ethylhexylisobutryamide developed for uranium recovery with improved radiation resistance",
+          "source": "https://www.semanticscholar.org/paper/ddf4856f97fc9905c7424f270c553b34fedfe6c2",
+          "domain": "Advanced extraction chemistry",
+          "function_alignment": "Alternative extractant technology - designed for uranium recovery from spent nuclear fuel with enhanced radiation stability",
+          "notes": "Promising for high-radiation environments but incomplete for comprehensive fissile material recovery",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/ddf4856f97fc9905c7424f270c553b34fedfe6c2",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          },
+          "score": 55,
+          "TRL": "Low",
+          "feasibility": "Medium",
+          "realism": "Realistic",
+          "gap_analysis": "Addresses uranium recovery but limited evidence for plutonium extraction capability. Enhanced radiation resistance beneficial but incomplete solution for full requirements."
+        },
+        {
+          "name": "Direct Oxide Dissolution in Organic Solvents",
+          "description": "Alternative reprocessing approach involving direct dissolution of actinide oxides in tributyl phosphate, eliminating aqueous dissolution step and reducing facility requirements",
+          "source": "https://www.semanticscholar.org/paper/9de062cb7acbb232d95c489c5fcbb57a6cc80926",
+          "domain": "Advanced reprocessing technology",
+          "function_alignment": "Alternative approach - potentially more efficient process for uranium and plutonium recovery with reduced facility size",
+          "notes": "Innovative approach requiring extensive development and validation before industrial implementation",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/9de062cb7acbb232d95c489c5fcbb57a6cc80926",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          },
+          "score": 50,
+          "TRL": "Low",
+          "feasibility": "Medium",
+          "realism": "Experimental",
+          "gap_analysis": "Alternative approach with potential benefits but limited industrial validation. Significant departure from established technology with uncertain scalability to 1800 tHM/year."
+        },
+        {
+          "name": "Pyroprocessing (Electrochemical Reprocessing)",
+          "description": "High-temperature electrochemical separation process using molten salt electrolytes to separate actinides from fission products, particularly suited for fast reactor fuels and proliferation-resistant operations.",
+          "source": "https://www.iaea.org/publications/13549/pyroprocessing-of-spent-nuclear-fuel",
+          "domain": "Nuclear fuel cycle - pyrochemical reprocessing",
+          "function_alignment": "Medium - alternative technology for actinide recovery, limited commercial scale experience",
+          "notes": "Fundamentally different technology requiring specialized infrastructure, limited applicability to stated fuel types",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.iaea.org/publications/13549/pyroprocessing-of-spent-nuclear-fuel",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          },
+          "score": 45,
+          "TRL": "Medium",
+          "feasibility": "Medium",
+          "realism": "Realistic",
+          "gap_analysis": "Alternative technology for actinide recovery but limited commercial scale experience and different infrastructure requirements. Not optimized for UOX/MOX fuel processing."
+        },
+        {
+          "name": "GANEX (Grouped Actinide Extraction) Process",
+          "description": "Advanced aqueous process for co-extraction of all actinides (U, Np, Pu, Am, Cm) using novel extractants, designed for Generation IV fuel cycle applications with enhanced waste minimization.",
+          "source": "https://www.oecd-nea.org/jcms/pl_14912/ganex-process-for-actinide-partitioning",
+          "domain": "Nuclear fuel cycle - advanced partitioning",
+          "function_alignment": "Medium - research-stage process for comprehensive actinide recovery",
+          "notes": "Advanced research technology not ready for immediate industrial implementation at required scale",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.oecd-nea.org/jcms/pl_14912/ganex-process-for-actinide-partitioning",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!DOCTYPE html>\n<html lang=\"en\" xml:lang=\"en\" dir=\"ltr\"   >\n<head>\n  <base href=\"https://www.oecd-nea.org/\"   />\n  \n  <meta charset=\"UTF-8\" />\n  <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n  <meta name=\"Generator\" content=\"Jalios JCMS - Copyright (C) Jalios S.A. 2001 - 2026 - https://www"
+          },
+          "score": 40,
+          "TRL": "Low",
+          "feasibility": "Medium",
+          "realism": "Experimental",
+          "gap_analysis": "Research-stage process addressing comprehensive actinide recovery but not yet demonstrated at commercial scale. Designed for future Generation IV applications rather than current fuel types."
+        },
+        {
+          "name": "DIAMEX-SANEX Process Combination",
+          "description": "Two-stage aqueous separation process: DIAMEX for trivalent actinide/lanthanide extraction followed by SANEX for selective actinide recovery, enabling minor actinide recycling.",
+          "source": "https://www.oecd-nea.org/jcms/pl_14910/diamex-sanex-processes",
+          "domain": "Nuclear fuel cycle - minor actinide partitioning",
+          "function_alignment": "Medium - complementary to main reprocessing for comprehensive waste management",
+          "notes": "Specialized for minor actinide management, not suitable as primary reprocessing technology for stated requirements",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.oecd-nea.org/jcms/pl_14910/diamex-sanex-processes",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!DOCTYPE html>\n<html lang=\"en\" xml:lang=\"en\" dir=\"ltr\"   >\n<head>\n  <base href=\"https://www.oecd-nea.org/\"   />\n  \n  <meta charset=\"UTF-8\" />\n  <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n  <meta name=\"Generator\" content=\"Jalios JCMS - Copyright (C) Jalios S.A. 2001 - 2026 - https://www"
+          },
+          "score": 35,
+          "TRL": "Low",
+          "feasibility": "Medium",
+          "realism": "Experimental",
+          "gap_analysis": "Complementary technology focused on minor actinide partitioning rather than primary uranium/plutonium extraction. Does not address core function requirements for fissile material recovery."
+        }
+      ],
+      "saved_to": "c:\\Projects\\poc_v1\\candidates_enriched_20260318_120033.json"
+    }
+  ]
+}

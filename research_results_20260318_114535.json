@@ -1,0 +1,762 @@
+{
+  "generated_at": "2026-03-18T10:45:35.935277+00:00",
+  "project": {},
+  "total_researched": 1,
+  "records": [
+    {
+      "type": "system_research",
+      "understanding": {
+        "function": "Nuclear fuel reprocessing system for extracting fissile material (uranium and plutonium) from spent nuclear fuel waste, capable of processing multiple fuel types (UOX, MOX, ERU/REU) with 1800 tHM/year capacity",
+        "domain": "Nuclear fuel cycle - spent fuel reprocessing and fissile material recovery",
+        "active_domains": [
+          "Nuclear engineering",
+          "Radiological safety",
+          "Process engineering",
+          "Regulatory compliance",
+          "Quality control"
+        ],
+        "constraints": [
+          "ALARA radiation protection principle",
+          "High operational availability requirements",
+          "1800 tHM/year processing capacity",
+          "Product purity standards for downstream fuel fabrication",
+          "Radiological containment during operations",
+          "Multi-fuel type processing capability",
+          "French jurisdiction regulatory compliance"
+        ],
+        "uncertainties": [
+          "Specific technical processes and equipment details not defined",
+          "Exact safety and regulatory requirements beyond ALARA principle",
+          "Interface specifications with upstream waste reception and downstream fuel fabrication systems",
+          "Detailed operational parameters and control systems",
+          "Emergency response and degraded operation procedures",
+          "Waste management for non-recoverable materials",
+          "Maintenance and decommissioning considerations"
+        ]
+      },
+      "candidates": [
+        {
+          "name": "PUREX Process",
+          "description": "Plutonium Uranium Redox Extraction process - the most widely used industrial method for reprocessing spent nuclear fuel to separate uranium and plutonium using solvent extraction with tributyl phosphate",
+          "source": "https://openalex.org/W2049334543",
+          "domain": "Nuclear fuel reprocessing - solvent extraction",
+          "function_alignment": "Direct match - designed for uranium/plutonium extraction from spent fuel with industrial scale capability",
+          "notes": "Established technology with complexant-based stripping improvements for U/Pu separation",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://openalex.org/W2049334543",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>OpenAlex</title><script>// Suppress console errors for ResizeObserver\n      const originalError = console.error;\n "
+          }
+        },
+        {
+          "name": "Spent Fuel Dissolution and Reprocessing Systems",
+          "description": "Comprehensive reprocessing systems that handle dissolution of spent nuclear fuel and subsequent separation processes for fissile material recovery",
+          "source": "https://openalex.org/W2267099872",
+          "domain": "Nuclear fuel cycle - spent fuel processing",
+          "function_alignment": "High alignment - covers complete reprocessing workflow from dissolution to separation",
+          "notes": "Addresses multiple fuel types and industrial scale processing requirements",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://openalex.org/W2267099872",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>OpenAlex</title><script>// Suppress console errors for ResizeObserver\n      const originalError = console.error;\n "
+          }
+        },
+        {
+          "name": "ALARA-Based Radiation Protection Systems",
+          "description": "Radiation protection systems designed around As Low As Reasonably Achievable principles for nuclear reprocessing facilities, including occupational dose reduction measures",
+          "source": "https://www.semanticscholar.org/paper/7467e7200b6610511401b4c7e3376f55aaff786c",
+          "domain": "Radiological safety - nuclear facility protection",
+          "function_alignment": "Essential supporting system - directly addresses ALARA constraint for reprocessing facility operations",
+          "notes": "Specific focus on spent nuclear fuel reprocessing facility protection aspects",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/7467e7200b6610511401b4c7e3376f55aaff786c",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "Radioactive Organic Solvent Treatment Systems",
+          "description": "Advanced treatment systems for managing spent radioactive organic solvents generated during nuclear fuel reprocessing operations",
+          "source": "https://openalex.org/W4392905619",
+          "domain": "Nuclear waste management - solvent treatment",
+          "function_alignment": "Supporting system - handles waste streams from reprocessing operations",
+          "notes": "Recent 2024 advances in treatment of reprocessing plant waste solvents",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://openalex.org/W4392905619",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>OpenAlex</title><script>// Suppress console errors for ResizeObserver\n      const originalError = console.error;\n "
+          }
+        },
+        {
+          "name": "Hot Cell Remote Handling Systems",
+          "description": "Remote handling and manipulation systems for nuclear fuel reprocessing operations in highly radioactive environments, enabling safe material processing",
+          "source": "https://www.iaea.org/publications/technical-reports/remote-handling-systems",
+          "domain": "Nuclear engineering - remote operations",
+          "function_alignment": "Essential supporting technology - enables safe handling of spent fuel and fissile materials",
+          "notes": "Critical for maintaining ALARA principles and operational safety in high-radiation environments",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.iaea.org/publications/technical-reports/remote-handling-systems",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "Multi-Fuel Type Processing Systems",
+          "description": "Flexible reprocessing systems capable of handling different fuel types including UOX (Uranium Oxide), MOX (Mixed Oxide), and ERU/REU (Enriched Reprocessed Uranium) fuels",
+          "source": "https://www.world-nuclear.org/information-library/nuclear-fuel-cycle/fuel-recycling/processing-of-used-nuclear-fuel.aspx",
+          "domain": "Nuclear fuel cycle - multi-fuel processing",
+          "function_alignment": "High alignment - directly addresses requirement for processing UOX, MOX, and ERU/REU fuel types",
+          "notes": "Addresses the specific constraint for multi-fuel type processing capability",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.world-nuclear.org/information-library/nuclear-fuel-cycle/fuel-recycling/processing-of-used-nuclear-fuel.aspx",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"utf-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <meta http-equiv=\"Cache-Control\" content=\"private, no-store\" />\n    <title>Processing of Used Nuclear Fuel - World Nuclear Association</title>\n    <me"
+          }
+        },
+        {
+          "name": "Industrial Scale Solvent Extraction Plants",
+          "description": "Large-scale solvent extraction facilities designed for high-throughput nuclear fuel reprocessing with capacities in the range of 1000+ tHM/year",
+          "source": "https://www.oecd-nea.org/jcms/pl_14912/nuclear-fuel-recycling",
+          "domain": "Process engineering - industrial nuclear processing",
+          "function_alignment": "High alignment - designed for industrial scale throughput matching 1800 tHM/year requirement",
+          "notes": "Proven technology for large-scale fissile material recovery operations",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.oecd-nea.org/jcms/pl_14912/nuclear-fuel-recycling",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!DOCTYPE html>\n<html lang=\"en\" xml:lang=\"en\" dir=\"ltr\"   >\n<head>\n  <base href=\"https://www.oecd-nea.org/\"   />\n  \n  <meta charset=\"UTF-8\" />\n  <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n  <meta name=\"Generator\" content=\"Jalios JCMS - Copyright (C) Jalios S.A. 2001 - 2026 - https://www"
+          }
+        },
+        {
+          "name": "Nuclear Facility Containment Systems",
+          "description": "Engineered containment systems for nuclear reprocessing facilities providing radiological isolation and emergency response capabilities",
+          "source": "https://www.nrc.gov/reading-rm/basic-ref/glossary/containment.html",
+          "domain": "Nuclear safety - containment engineering",
+          "function_alignment": "Essential supporting system - provides radiological containment during operations as required",
+          "notes": "Critical for meeting radiological safety and regulatory compliance requirements",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.nrc.gov/reading-rm/basic-ref/glossary/containment.html",
+            "verified": false,
+            "error": ""
+          }
+        },
+        {
+          "name": "PUREX (Plutonium Uranium Redox Extraction) Process",
+          "description": "Aqueous reprocessing method using tributyl phosphate (TBP) in kerosene to separate uranium and plutonium from fission products through solvent extraction. Industry standard for commercial reprocessing with proven track record at facilities like La Hague and Sellafield.",
+          "source": "https://www.iaea.org/publications/10962/spent-fuel-reprocessing-options",
+          "domain": "Nuclear fuel cycle - chemical separation processes",
+          "function_alignment": "Direct match - primary commercial technology for uranium/plutonium extraction from spent fuel with multi-fuel type capability",
+          "notes": "Mature technology with established safety protocols, regulatory acceptance, and capacity scalability to 1800 tHM/year",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.iaea.org/publications/10962/spent-fuel-reprocessing-options",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "COEX (Co-Extraction) Process",
+          "description": "Modified PUREX process that co-extracts uranium and plutonium together rather than separately, reducing proliferation risks while maintaining reprocessing efficiency. Developed by AREVA/Orano for enhanced security.",
+          "source": "https://www.orano.group/en/unpacking-nuclear/all-about-nuclear-fuel-cycle",
+          "domain": "Nuclear fuel cycle - proliferation-resistant reprocessing",
+          "function_alignment": "High alignment - addresses fissile material recovery with enhanced security features suitable for commercial scale operations",
+          "notes": "Reduces separated plutonium inventory, maintains compatibility with existing PUREX infrastructure",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.orano.group/en/unpacking-nuclear/all-about-nuclear-fuel-cycle",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "Advanced PUREX with Centrifugal Contactors",
+          "description": "Enhanced PUREX process using centrifugal contactors instead of pulsed columns for solvent extraction, providing better mass transfer, reduced solvent degradation, and improved process control for high-throughput operations.",
+          "source": "https://www.oecd-nea.org/jcms/pl_14912/advanced-nuclear-fuel-cycles-and-radioactive-waste-management",
+          "domain": "Nuclear engineering - advanced separation equipment",
+          "function_alignment": "High alignment - improves processing efficiency and capacity while maintaining proven PUREX chemistry",
+          "notes": "Better suited for high-capacity operations like 1800 tHM/year, improved operational availability",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.oecd-nea.org/jcms/pl_14912/advanced-nuclear-fuel-cycles-and-radioactive-waste-management",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!DOCTYPE html>\n<html lang=\"en\" xml:lang=\"en\" dir=\"ltr\"   >\n<head>\n  <base href=\"https://www.oecd-nea.org/\"   />\n  \n  <meta charset=\"UTF-8\" />\n  <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n  <meta name=\"Generator\" content=\"Jalios JCMS - Copyright (C) Jalios S.A. 2001 - 2026 - https://www"
+          }
+        },
+        {
+          "name": "GANEX (Group Actinide Extraction) Process",
+          "description": "Advanced reprocessing concept that co-extracts all actinides (U, Np, Pu, Am, Cm) together using diamide extractants, enabling partitioning and transmutation strategies while recovering fissile materials.",
+          "source": "https://www.oecd-nea.org/jcms/pl_13434/advanced-separation-techniques-for-nuclear-fuel-reprocessing-and-radioactive-waste-treatment",
+          "domain": "Nuclear fuel cycle - advanced partitioning processes",
+          "function_alignment": "Moderate alignment - recovers fissile materials but focuses on minor actinides, may exceed basic U/Pu recovery requirements",
+          "notes": "More complex than required but offers future flexibility for advanced fuel cycles",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.oecd-nea.org/jcms/pl_13434/advanced-separation-techniques-for-nuclear-fuel-reprocessing-and-radioactive-waste-treatment",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!DOCTYPE html>\n<html lang=\"en\" xml:lang=\"en\" dir=\"ltr\"   >\n<head>\n  <base href=\"https://www.oecd-nea.org/\"   />\n  \n  <meta charset=\"UTF-8\" />\n  <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n  <meta name=\"Generator\" content=\"Jalios JCMS - Copyright (C) Jalios S.A. 2001 - 2026 - https://www"
+          }
+        },
+        {
+          "name": "Pyroprocessing (Electrochemical Reprocessing)",
+          "description": "High-temperature electrochemical process using molten salt electrolytes to separate actinides from fission products. Operates at 500°C using LiCl-KCl eutectic salt with inherent proliferation resistance.",
+          "source": "https://www.iaea.org/publications/13549/pyroprocessing-of-spent-nuclear-fuel",
+          "domain": "Nuclear engineering - electrochemical separation",
+          "function_alignment": "Moderate alignment - recovers fissile materials but typically produces mixed actinide products rather than separated U/Pu",
+          "notes": "Compact footprint, inherent proliferation resistance, but limited commercial deployment experience",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.iaea.org/publications/13549/pyroprocessing-of-spent-nuclear-fuel",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "UREX+ Process Suite",
+          "description": "Modular aqueous reprocessing approach starting with uranium extraction (UREX), followed by optional additional separation steps. Designed for flexible implementation based on fuel cycle strategy and proliferation concerns.",
+          "source": "https://www.energy.gov/ne/nuclear-fuel-cycle-research-development",
+          "domain": "Nuclear fuel cycle - modular separation processes",
+          "function_alignment": "High alignment - specifically designed for uranium recovery with optional plutonium separation, adaptable to different fuel types",
+          "notes": "Modular design allows tailoring to specific requirements, developed with proliferation resistance considerations",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.energy.gov/ne/nuclear-fuel-cycle-research-development",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "Remote Handling and Hot Cell Systems",
+          "description": "Integrated remote handling infrastructure including master-slave manipulators, overhead cranes, and shielded hot cells for safe processing of highly radioactive spent fuel materials while maintaining ALARA principles.",
+          "source": "https://www.iaea.org/publications/10568/design-and-construction-of-hot-cells-for-work-with-highly-radioactive-materials",
+          "domain": "Radiological safety - remote handling systems",
+          "function_alignment": "Essential supporting technology - required for safe operation of any reprocessing system handling spent fuel",
+          "notes": "Critical for ALARA compliance and operational safety, must integrate with chosen chemical process",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.iaea.org/publications/10568/design-and-construction-of-hot-cells-for-work-with-highly-radioactive-materials",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          }
+        },
+        {
+          "name": "Continuous Monitoring and Safeguards Systems",
+          "description": "Integrated nuclear material accountancy and control systems including real-time monitoring, material balance areas, and IAEA safeguards compliance for tracking fissile materials throughout the reprocessing facility.",
+          "source": "https://www.iaea.org/publications/10750/iaea-safeguards-glossary",
+          "domain": "Nuclear security - safeguards and material control",
+          "function_alignment": "Essential supporting system - required for regulatory compliance and material accountability in fissile material processing",
+          "notes": "Mandatory for commercial reprocessing operations, must be integrated from design phase",
+          "provenance": "llm",
+          "verified": null
+        }
+      ],
+      "enriched_pre_rank": [
+        {
+          "name": "PUREX Process",
+          "description": "Plutonium Uranium Redox Extraction process - the most widely used industrial method for reprocessing spent nuclear fuel to separate uranium and plutonium using solvent extraction with tributyl phosphate",
+          "source": "https://openalex.org/W2049334543",
+          "domain": "Nuclear fuel reprocessing - solvent extraction",
+          "function_alignment": "Direct match - designed for uranium/plutonium extraction from spent fuel with industrial scale capability",
+          "notes": "Established technology with decades of commercial operation at facilities like La Hague, proven capacity scalability",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://openalex.org/W2049334543",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>OpenAlex</title><script>// Suppress console errors for ResizeObserver\n      const originalError = console.error;\n "
+          },
+          "score": 95,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Direct match for uranium/plutonium extraction with proven industrial scale capability. Fully addresses core function requirements."
+        },
+        {
+          "name": "Spent Fuel Dissolution and Reprocessing Systems",
+          "description": "Comprehensive reprocessing systems that handle dissolution of spent nuclear fuel and subsequent separation processes for fissile material recovery",
+          "source": "https://openalex.org/W2267099872",
+          "domain": "Nuclear fuel cycle - spent fuel processing",
+          "function_alignment": "High alignment - covers complete reprocessing workflow from dissolution to separation",
+          "notes": "Comprehensive approach addressing full reprocessing chain with industrial scale capability",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://openalex.org/W2267099872",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>OpenAlex</title><script>// Suppress console errors for ResizeObserver\n      const originalError = console.error;\n "
+          },
+          "score": 90,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "High alignment covering complete reprocessing workflow from dissolution to separation. Addresses multi-fuel processing requirements."
+        },
+        {
+          "name": "ALARA-Based Radiation Protection Systems",
+          "description": "Radiation protection systems designed around As Low As Reasonably Achievable principles for nuclear reprocessing facilities, including occupational dose reduction measures",
+          "source": "https://www.semanticscholar.org/paper/7467e7200b6610511401b4c7e3376f55aaff786c",
+          "domain": "Radiological safety - nuclear facility protection",
+          "function_alignment": "Essential supporting system - directly addresses ALARA constraint for reprocessing facility operations",
+          "notes": "Mandatory safety system for regulatory compliance, well-established technology",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://www.semanticscholar.org/paper/7467e7200b6610511401b4c7e3376f55aaff786c",
+            "status_code": 202,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          },
+          "score": 75,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Essential supporting system directly addressing ALARA constraint. Does not provide core reprocessing function but critical for safe operations."
+        },
+        {
+          "name": "Radioactive Organic Solvent Treatment Systems",
+          "description": "Advanced treatment systems for managing spent radioactive organic solvents generated during nuclear fuel reprocessing operations",
+          "source": "https://openalex.org/W4392905619",
+          "domain": "Nuclear waste management - solvent treatment",
+          "function_alignment": "Supporting system - handles waste streams from reprocessing operations",
+          "notes": "Important auxiliary system for complete reprocessing facility, recent technological advances",
+          "provenance": "retrieved",
+          "verified": false,
+          "verification": {
+            "url": "https://openalex.org/W4392905619",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>OpenAlex</title><script>// Suppress console errors for ResizeObserver\n      const originalError = console.error;\n "
+          },
+          "score": 65,
+          "TRL": "Medium",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Supporting system for waste management from reprocessing operations. Does not provide core fissile material extraction function."
+        },
+        {
+          "name": "Hot Cell Remote Handling Systems",
+          "description": "Remote handling and manipulation systems for nuclear fuel reprocessing operations in highly radioactive environments, enabling safe material processing",
+          "source": "https://www.iaea.org/publications/technical-reports/remote-handling-systems",
+          "domain": "Nuclear engineering - remote operations",
+          "function_alignment": "Essential supporting technology - enables safe handling of spent fuel and fissile materials",
+          "notes": "Proven technology essential for high-radiation environment operations, enables safe reprocessing",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.iaea.org/publications/technical-reports/remote-handling-systems",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          },
+          "score": 80,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Essential enabling technology for safe handling of spent fuel and fissile materials. Critical for ALARA compliance but not core separation process."
+        },
+        {
+          "name": "Multi-Fuel Type Processing Systems",
+          "description": "Flexible reprocessing systems capable of handling different fuel types including UOX (Uranium Oxide), MOX (Mixed Oxide), and ERU/REU (Enriched Reprocessed Uranium) fuels",
+          "source": "https://www.world-nuclear.org/information-library/nuclear-fuel-cycle/fuel-recycling/processing-of-used-nuclear-fuel.aspx",
+          "domain": "Nuclear fuel cycle - multi-fuel processing",
+          "function_alignment": "High alignment - directly addresses requirement for processing UOX, MOX, and ERU/REU fuel types",
+          "notes": "Addresses specific constraint for diverse fuel type processing, demonstrated at commercial facilities",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.world-nuclear.org/information-library/nuclear-fuel-cycle/fuel-recycling/processing-of-used-nuclear-fuel.aspx",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"utf-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <meta http-equiv=\"Cache-Control\" content=\"private, no-store\" />\n    <title>Processing of Used Nuclear Fuel - World Nuclear Association</title>\n    <me"
+          },
+          "score": 85,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Directly addresses multi-fuel type processing requirement (UOX, MOX, ERU/REU). Proven capability at existing facilities."
+        },
+        {
+          "name": "Industrial Scale Solvent Extraction Plants",
+          "description": "Large-scale solvent extraction facilities designed for high-throughput nuclear fuel reprocessing with capacities in the range of 1000+ tHM/year",
+          "source": "https://www.oecd-nea.org/jcms/pl_14912/nuclear-fuel-recycling",
+          "domain": "Process engineering - industrial nuclear processing",
+          "function_alignment": "High alignment - designed for industrial scale throughput matching 1800 tHM/year requirement",
+          "notes": "Directly matches capacity requirements, established industrial scale operations worldwide",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.oecd-nea.org/jcms/pl_14912/nuclear-fuel-recycling",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!DOCTYPE html>\n<html lang=\"en\" xml:lang=\"en\" dir=\"ltr\"   >\n<head>\n  <base href=\"https://www.oecd-nea.org/\"   />\n  \n  <meta charset=\"UTF-8\" />\n  <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n  <meta name=\"Generator\" content=\"Jalios JCMS - Copyright (C) Jalios S.A. 2001 - 2026 - https://www"
+          },
+          "score": 90,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "High alignment with 1800 tHM/year capacity requirement. Proven technology for large-scale fissile material recovery."
+        },
+        {
+          "name": "Nuclear Facility Containment Systems",
+          "description": "Engineered containment systems for nuclear reprocessing facilities providing radiological isolation and emergency response capabilities",
+          "source": "https://www.nrc.gov/reading-rm/basic-ref/glossary/containment.html",
+          "domain": "Nuclear safety - containment engineering",
+          "function_alignment": "Essential supporting system - provides radiological containment during operations as required",
+          "notes": "Critical safety system for regulatory compliance and operational safety",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.nrc.gov/reading-rm/basic-ref/glossary/containment.html",
+            "verified": false,
+            "error": ""
+          },
+          "score": 75,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Essential for radiological containment constraint but does not provide core fissile material extraction function."
+        },
+        {
+          "name": "PUREX (Plutonium Uranium Redox Extraction) Process",
+          "description": "Aqueous reprocessing method using tributyl phosphate (TBP) in kerosene to separate uranium and plutonium from fission products through solvent extraction. Industry standard for commercial reprocessing with proven track record at facilities like La Hague and Sellafield.",
+          "source": "https://www.iaea.org/publications/10962/spent-fuel-reprocessing-options",
+          "domain": "Nuclear fuel cycle - chemical separation processes",
+          "function_alignment": "Direct match - primary commercial technology for uranium/plutonium extraction from spent fuel with multi-fuel type capability",
+          "notes": "Gold standard for commercial reprocessing, proven at required scale with regulatory acceptance",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.iaea.org/publications/10962/spent-fuel-reprocessing-options",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          },
+          "score": 95,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Direct match for primary function with established commercial track record. Fully capable of meeting all technical requirements."
+        },
+        {
+          "name": "COEX (Co-Extraction) Process",
+          "description": "Modified PUREX process that co-extracts uranium and plutonium together rather than separately, reducing proliferation risks while maintaining reprocessing efficiency. Developed by AREVA/Orano for enhanced security.",
+          "source": "https://www.orano.group/en/unpacking-nuclear/all-about-nuclear-fuel-cycle",
+          "domain": "Nuclear fuel cycle - proliferation-resistant reprocessing",
+          "function_alignment": "High alignment - addresses fissile material recovery with enhanced security features suitable for commercial scale operations",
+          "notes": "Advanced variant of proven PUREX technology with enhanced security features",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.orano.group/en/unpacking-nuclear/all-about-nuclear-fuel-cycle",
+            "status_code": 404,
+            "verified": false,
+            "name_match": false,
+            "evidence": ""
+          },
+          "score": 85,
+          "TRL": "Medium",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Addresses fissile material recovery with enhanced security features. Maintains PUREX compatibility while reducing proliferation risks."
+        },
+        {
+          "name": "Advanced PUREX with Centrifugal Contactors",
+          "description": "Enhanced PUREX process using centrifugal contactors instead of pulsed columns for solvent extraction, providing better mass transfer, reduced solvent degradation, and improved process control for high-throughput operations.",
+          "source": "https://www.oecd-nea.org/jcms/pl_14912/advanced-nuclear-fuel-cycles-and-radioactive-waste-management",
+          "domain": "Nuclear engineering - advanced separation equipment",
+          "function_alignment": "High alignment - improves processing efficiency and capacity while maintaining proven PUREX chemistry",
+          "notes": "Enhanced version of proven technology with improved operational characteristics for high-throughput applications",
+          "provenance": "llm",
+          "verified": false,
+          "verification": {
+            "url": "https://www.oecd-nea.org/jcms/pl_14912/advanced-nuclear-fuel-cycles-and-radioactive-waste-management",
+            "status_code": 200,
+            "verified": false,
+            "name_match": false,
+            "evidence": "<!DOCTYPE html>\n<html lang=\"en\" xml:lang=\"en\" dir=\"ltr\"   >\n<head>\n  <base href=\"https://www.oecd-nea.org/\"   />\n  \n  <meta charset=\"UTF-8\" />\n  <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n  <meta name=\"Generator\" content=\"Jalios JCMS - Copyright (C) Jalios S.A. 2001 - 2026 - https://www"
+          },
+          "score": 90,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Improves processing efficiency and capacity while maintaining proven PUREX chemistry. Well-suited for high-capacity operations."
+        },
+        {
+          "name": "GANEX (Group Actinide Extraction) Process",
+          "description": "Advanced reprocessing concept that co-extracts all actinides (U, Np, Pu, Am, Cm) together using diamide extractants",
+          "source": null,
+          "domain": "Nuclear fuel cycle - advanced separation",
+          "score": 60,
+          "TRL": "Low",
+          "feasibility": "Medium",
+          "realism": "Experimental",
+          "gap_analysis": "Advanced concept for actinide recovery but still in development phase. Does not meet current industrial scale requirements.",
+          "notes": "Promising future technology but not ready for immediate 1800 tHM/year commercial deployment",
+          "provenance": null,
+          "verified": null
+        }
+      ],
+      "ranked": [
+        {
+          "name": "PUREX (Plutonium Uranium Redox Extraction) Process",
+          "description": "Aqueous reprocessing method using tributyl phosphate (TBP) in kerosene to separate uranium and plutonium from fission products through solvent extraction. Industry standard for commercial reprocessing with proven track record at facilities like La Hague and Sellafield.",
+          "source": "https://www.iaea.org/publications/10962/spent-fuel-reprocessing-options",
+          "domain": "Nuclear fuel cycle - chemical separation processes",
+          "score": 95,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Direct match for uranium/plutonium extraction with proven industrial scale capability and multi-fuel type processing. Fully addresses core function requirements.",
+          "notes": "Mature, commercially proven technology with established safety protocols and regulatory acceptance. Scalable to required capacity.",
+          "provenance": "llm",
+          "verified": false
+        },
+        {
+          "name": "Advanced PUREX with Centrifugal Contactors",
+          "description": "Enhanced PUREX process using centrifugal contactors instead of pulsed columns for solvent extraction, providing better mass transfer, reduced solvent degradation, and improved process control for high-throughput operations.",
+          "source": "https://www.oecd-nea.org/jcms/pl_14912/advanced-nuclear-fuel-cycles-and-radioactive-waste-management",
+          "domain": "Nuclear engineering - advanced separation equipment",
+          "score": 90,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Improves upon proven PUREX chemistry with enhanced equipment for better capacity and operational availability. Well-suited for 1800 tHM/year requirement.",
+          "notes": "Evolutionary improvement of established technology with better performance characteristics for high-capacity operations.",
+          "provenance": "llm",
+          "verified": false
+        },
+        {
+          "name": "Industrial Scale Solvent Extraction Plants",
+          "description": "Large-scale solvent extraction facilities designed for high-throughput nuclear fuel reprocessing with capacities in the range of 1000+ tHM/year",
+          "source": "https://www.oecd-nea.org/jcms/pl_14912/nuclear-fuel-recycling",
+          "domain": "Process engineering - industrial nuclear processing",
+          "score": 88,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Directly addresses industrial scale throughput requirement of 1800 tHM/year. Proven technology for large-scale fissile material recovery operations.",
+          "notes": "Established industrial approach with demonstrated capacity scaling and operational experience.",
+          "provenance": "llm",
+          "verified": false
+        },
+        {
+          "name": "COEX (Co-Extraction) Process",
+          "description": "Modified PUREX process that co-extracts uranium and plutonium together rather than separately, reducing proliferation risks while maintaining reprocessing efficiency. Developed by AREVA/Orano for enhanced security.",
+          "source": "https://www.orano.group/en/unpacking-nuclear/all-about-nuclear-fuel-cycle",
+          "domain": "Nuclear fuel cycle - proliferation-resistant reprocessing",
+          "score": 85,
+          "TRL": "Medium",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Addresses fissile material recovery with enhanced security features. Compatible with existing infrastructure while reducing separated plutonium inventory.",
+          "notes": "Evolutionary development of PUREX with enhanced security characteristics, suitable for commercial scale operations.",
+          "provenance": "llm",
+          "verified": false
+        },
+        {
+          "name": "Multi-Fuel Type Processing Systems",
+          "description": "Flexible reprocessing systems capable of handling different fuel types including UOX (Uranium Oxide), MOX (Mixed Oxide), and ERU/REU (Enriched Reprocessed Uranium) fuels",
+          "source": "https://www.world-nuclear.org/information-library/nuclear-fuel-cycle/fuel-recycling/processing-of-used-nuclear-fuel.aspx",
+          "domain": "Nuclear fuel cycle - multi-fuel processing",
+          "score": 82,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Directly addresses the specific constraint for processing UOX, MOX, and ERU/REU fuel types. Essential for meeting multi-fuel capability requirement.",
+          "notes": "Addresses critical system requirement for handling diverse fuel types with established technology base.",
+          "provenance": "llm",
+          "verified": false
+        },
+        {
+          "name": "Spent Fuel Dissolution and Reprocessing Systems",
+          "description": "Comprehensive reprocessing systems that handle dissolution of spent nuclear fuel and subsequent separation processes for fissile material recovery",
+          "source": "https://openalex.org/W2267099872",
+          "domain": "Nuclear fuel cycle - spent fuel processing",
+          "score": 80,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Covers complete reprocessing workflow from dissolution to separation, addressing multiple fuel types and industrial scale processing requirements.",
+          "notes": "Comprehensive system approach covering full reprocessing chain with industrial scale capability.",
+          "provenance": "retrieved",
+          "verified": false
+        },
+        {
+          "name": "Hot Cell Remote Handling Systems",
+          "description": "Remote handling and manipulation systems for nuclear fuel reprocessing operations in highly radioactive environments, enabling safe material processing",
+          "source": "https://www.iaea.org/publications/technical-reports/remote-handling-systems",
+          "domain": "Nuclear engineering - remote operations",
+          "score": 75,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Essential supporting technology enabling safe handling of spent fuel and fissile materials. Critical for maintaining ALARA principles.",
+          "notes": "Essential infrastructure component for safe operations in high-radiation environments, well-established technology.",
+          "provenance": "llm",
+          "verified": false
+        },
+        {
+          "name": "Nuclear Facility Containment Systems",
+          "description": "Engineered containment systems for nuclear reprocessing facilities providing radiological isolation and emergency response capabilities",
+          "source": "https://www.nrc.gov/reading-rm/basic-ref/glossary/containment.html",
+          "domain": "Nuclear safety - containment engineering",
+          "score": 72,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Provides required radiological containment during operations. Essential supporting system for meeting safety and regulatory compliance requirements.",
+          "notes": "Critical safety infrastructure with established design principles and regulatory framework.",
+          "provenance": "llm",
+          "verified": false
+        },
+        {
+          "name": "ALARA-Based Radiation Protection Systems",
+          "description": "Radiation protection systems designed around As Low As Reasonably Achievable principles for nuclear reprocessing facilities, including occupational dose reduction measures",
+          "source": "https://www.semanticscholar.org/paper/7467e7200b6610511401b4c7e3376f55aaff786c",
+          "domain": "Radiological safety - nuclear facility protection",
+          "score": 70,
+          "TRL": "High",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Directly addresses ALARA constraint for reprocessing facility operations. Essential supporting system for regulatory compliance.",
+          "notes": "Mandatory safety system with established implementation approaches and regulatory requirements.",
+          "provenance": "retrieved",
+          "verified": false
+        },
+        {
+          "name": "Radioactive Organic Solvent Treatment Systems",
+          "description": "Advanced treatment systems for managing spent radioactive organic solvents generated during nuclear fuel reprocessing operations",
+          "source": "https://openalex.org/W4392905619",
+          "domain": "Nuclear waste management - solvent treatment",
+          "score": 65,
+          "TRL": "Medium",
+          "feasibility": "High",
+          "realism": "Realistic",
+          "gap_analysis": "Supporting system for handling waste streams from reprocessing operations. Important for overall facility operation but not core to fissile material extraction function.",
+          "notes": "Important auxiliary system for waste management with recent technological advances, supports overall facility operation.",
+          "provenance": "retrieved",
+          "verified": false
+        }
+      ],
+      "summary": {
+        "domain_coverage": {
+          "Nuclear fuel cycle - chemical separation processes": {
+            "count": 1,
+            "min": 95.0,
+            "max": 95.0
+          },
+          "Nuclear engineering - advanced separation equipment": {
+            "count": 1,
+            "min": 90.0,
+            "max": 90.0
+          },
+          "Process engineering - industrial nuclear processing": {
+            "count": 1,
+            "min": 88.0,
+            "max": 88.0
+          },
+          "Nuclear fuel cycle - proliferation-resistant reprocessing": {
+            "count": 1,
+            "min": 85.0,
+            "max": 85.0
+          },
+          "Nuclear fuel cycle - multi-fuel processing": {
+            "count": 1,
+            "min": 82.0,
+            "max": 82.0
+          },
+          "Nuclear fuel cycle - spent fuel processing": {
+            "count": 1,
+            "min": 80.0,
+            "max": 80.0
+          },
+          "Nuclear engineering - remote operations": {
+            "count": 1,
+            "min": 75.0,
+            "max": 75.0
+          },
+          "Nuclear safety - containment engineering": {
+            "count": 1,
+            "min": 72.0,
+            "max": 72.0
+          },
+          "Radiological safety - nuclear facility protection": {
+            "count": 1,
+            "min": 70.0,
+            "max": 70.0
+          },
+          "Nuclear waste management - solvent treatment": {
+            "count": 1,
+            "min": 65.0,
+            "max": 65.0
+          }
+        },
+        "buckets": {
+          "deploy_now": 6,
+          "monitor": 4,
+          "rd_invest": 0,
+          "unknown": 0
+        }
+      }
+    }
+  ]
+}

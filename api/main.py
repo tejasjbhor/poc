@@ -22,8 +22,14 @@ from fastapi.responses import JSONResponse
 from state.session_store import session_file_queues
 from agents.super_agent import run_pipeline
 from api.ws_manager import ws_manager
+
+
 from schemas.models import (
-    AgentStatus, SessionStatusResponse, StartSessionResponse,
+    AgentEvent,
+    AgentName,
+    AgentStatus,
+    SessionStatusResponse,
+    StartSessionResponse,
 )
 from state.session_store import session_store
 from utils.config import get_settings
@@ -73,6 +79,11 @@ def _require_api_key() -> str:
     key = cfg.anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY", "")
     # For early API testing we don't hard-fail when the key is missing.
     # The downstream agents will fall back to lightweight mock behaviour.
+    if not key:
+        raise HTTPException(
+            status_code=500,
+            detail="ANTHROPIC_API_KEY is not configured on the server.",
+        )
     return key
 
 
@@ -436,6 +447,20 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                         "status": "cancelled",
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                     })
+            
+            elif msg_type == "confirm_step2":
+                # Frontend confirmation hook for Research Agent "Step 2" (system understanding).
+                # We persist the confirmation as a Research Agent event, then broadcast it
+                # so connected clients can update their UI immediately.
+                ev = AgentEvent(
+                    session_id=session_id,
+                    agent=AgentName.RESEARCH,
+                    step="step2_confirmed",
+                    status=AgentStatus.COMPLETED,
+                    payload={"confirmed": True},
+                )
+                await session_store.append_event(session_id, ev)
+                await ws_manager.broadcast(session_id, ev.to_ws())
 
             else:
                 await ws_manager.send_direct(session_id, websocket, {
