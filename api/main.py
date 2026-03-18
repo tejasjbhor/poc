@@ -71,6 +71,11 @@ def _require_api_key() -> str:
     key = cfg.anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY", "")
     # For early API testing we don't hard-fail when the key is missing.
     # The downstream agents will fall back to lightweight mock behaviour.
+    if not key:
+        raise HTTPException(
+            status_code=500,
+            detail="ANTHROPIC_API_KEY is not configured on the server.",
+        )
     return key
 
 

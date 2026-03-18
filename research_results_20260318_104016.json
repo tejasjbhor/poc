@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-03-18T09:40:16.224706+00:00",
+  "project": {},
+  "total_researched": 1,
+  "records": [
+    {
+      "type": "system_research",
+      "understanding": {
+        "function": "Nuclear fuel reprocessing system for extracting fissile material (uranium and plutonium) from spent nuclear fuel waste, capable of processing multiple fuel types (UOX, MOX, ERU/REU) with 1800 tHM/year capacity",
+        "domain": "Nuclear fuel cycle - spent fuel reprocessing and fissile material recovery",
+        "active_domains": [
+          "Nuclear engineering",
+          "Radiological safety",
+          "Process engineering",
+          "Regulatory compliance",
+          "Quality control"
+        ],
+        "constraints": [
+          "ALARA radiation protection principle",
+          "High operational availability requirements",
+          "1800 tHM/year processing capacity",
+          "Product purity standards for downstream fuel fabrication",
+          "Radiological containment during operations",
+          "Multi-fuel type processing capability",
+          "French jurisdiction regulatory compliance"
+        ],
+        "uncertainties": [
+          "Specific technical processes and equipment details not defined",
+          "Exact safety and regulatory requirements beyond ALARA principle unclear",
+          "Interface specifications with upstream waste reception and downstream fuel fabrication systems undefined",
+          "Detailed operational parameters and control setpoints not specified",
+          "Emergency response and accident scenarios not described",
+          "Waste management for non-recoverable materials not addressed"
+        ]
+      },
+      "candidates": [],
+      "ranked": []
+    }
+  ]
+}
