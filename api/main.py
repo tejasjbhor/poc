@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import uuid
 from contextlib import asynccontextmanager
@@ -12,12 +13,13 @@ from typing import Optional
 import structlog
 from fastapi import (
     BackgroundTasks, FastAPI, File, Form,
-    HTTPException, Query, UploadFile,
-    WebSocket, WebSocketDisconnect,
+    HTTPException, Query, Request, UploadFile,
+    WebSocket, WebSocketDisconnect, APIRouter
 )
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
+from state.session_store import session_file_queues
 from agents.super_agent import run_pipeline
 from api.ws_manager import ws_manager
 from schemas.models import (
@@ -207,6 +209,28 @@ async def get_model(session_id: str):
         )
     return state.iso_model.model_dump()
 
+@app.post("/api/v1/sessions/{session_id}/input")
+async def upload_input(session_id: str, request: Request, file: UploadFile = None):
+    
+    if session_id not in session_file_queues:
+        raise HTTPException(404, "Session not found")
+
+    if file:
+        content = await file.read()
+        data = {
+            "type": "file",
+            "content": content.decode("utf-8")
+        }
+    else:
+        body = await request.json()
+        data = {
+            "type": "text",
+            "content": body.get("content")
+        }
+
+    await session_file_queues[session_id].put(data)
+
+    return {"status": "ok"}
 
 @app.get(
     "/api/v1/sessions/{session_id}/research",

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from datetime import datetime, timezone
-from typing import Callable, Coroutine
+from typing import Callable, Coroutine, Optional
 
 import asyncio
 
@@ -132,66 +133,126 @@ Domain context: {domain_context}
 
 # Public runner
 
+from pathlib import Path
+from schemas.models import AgentEvent, AgentName, AgentStatus
+
 async def run_operational_agent(
     session_id: str,
     broadcast: BroadcastFn,
-) -> ISO15926Model:
+    user_input_queue: asyncio.Queue,  # frontend pushes JSON content here
+    timeout: float = 300.0,
+    poll_interval: float = 0.5,
+):
     """
-    Operational agent without file input, using preloaded/mock data.
+    Waits for a JSON file sent from the frontend via an in-memory queue,
+    parses it, broadcasts progress, and returns it as 'model'.
+    
+    user_input_queue: asyncio.Queue where frontend pushes the JSON string.
     """
-
     try:
-        await broadcast(session_id, AgentEvent(
-            session_id=session_id, agent=AgentName.OPERATIONAL,
-            step="started", status=AgentStatus.RUNNING,
-            payload={"note": "Operational Agent Started"}
-        ).to_ws())
-        
-        # Step 2: got data (mock)
+        # Step 0: agent started
         await broadcast(session_id, AgentEvent(
             session_id=session_id,
             agent=AgentName.OPERATIONAL,
-            step="got_data",
+            step="started",
             status=AgentStatus.RUNNING,
-            payload={"note": "Using preloaded mock data"}
-        ).to_ws())
-        
-        # Step 2.5: analyzing system data
-        await broadcast(session_id, AgentEvent(
-            session_id=session_id,
-            agent=AgentName.OPERATIONAL,
-            step="analyzing_system_data",
-            status=AgentStatus.RUNNING,
-            payload={"note": "Processing system description..."}
+            payload={"note": "Operational Agent Started. Waiting for JSON upload."}
         ).to_ws())
 
-        await asyncio.sleep(5)
-        
-        meta = ISO15926Meta(source_document="mock_document")
-        model = ISO15926Model(meta=meta, entities=[], relationships=[], properties=[])
-        
+        # Step 1: broadcast user input request and set status WAITING_FOR_USER_INPUT
         await broadcast(session_id, AgentEvent(
-            session_id=session_id, agent=AgentName.OPERATIONAL,
-            step="system_description_ready", status=AgentStatus.RUNNING,
+            session_id=session_id,
+            agent=AgentName.OPERATIONAL,
+            step="request_user_input",
+            status=AgentStatus.WAITING_FOR_USER_INPUT,
             payload={
-            "note": "System Description Ready",
-            "entities": len(model.entities),
-            "relationships": len(model.relationships),
-            "requirements": len(model.get_requirements()),
+                "type": "user_input_request",
+                "input_type": "multi",
+                "allowed_inputs": ["file_upload", "text"],
+                "input_format": {
+                    "file": "application/json",
+                    "text": "free_text"
+                },
+                "label": "Provide system description",
+                "instructions": "Upload a JSON file OR describe your system in text.",
+                "ui_hint": {
+                    "render_as": "multi_input",
+                    "options": ["upload", "text"]
+                }
+                }
+        ).to_ws())
+
+        # Step 1: wait for file content
+        elapsed = 0.0
+        input_data: Optional[dict] = None
+        while input_data is None:
+            try:
+                input_data = user_input_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                if elapsed >= timeout:
+                    raise TimeoutError("Timed out waiting for user input.")
+                await asyncio.sleep(poll_interval)
+                elapsed += poll_interval
+
+        await broadcast(session_id, AgentEvent(
+            session_id=session_id,
+            agent=AgentName.OPERATIONAL,
+            step="input_received",
+            status=AgentStatus.RUNNING,
+            payload={"note": "User input received. Processing..."}
+        ).to_ws())
+
+        # Step 2: normalize input → model
+        if isinstance(input_data, dict) and input_data.get("type") == "file":
+            content = input_data.get("content", "")
+
+            await broadcast(session_id, AgentEvent(
+                session_id=session_id,
+                agent=AgentName.OPERATIONAL,
+                step="parsing_file",
+                status=AgentStatus.RUNNING,
+                payload={"note": "Parsing uploaded JSON file..."}
+            ).to_ws())
+
+            model = json.loads(content)
+
+        elif isinstance(input_data, dict) and input_data.get("type") == "text":
+            text = input_data.get("content", "")
+
+            await broadcast(session_id, AgentEvent(
+                session_id=session_id,
+                agent=AgentName.OPERATIONAL,
+                step="parsing_text",
+                status=AgentStatus.RUNNING,
+                payload={"note": "Structuring text input..."}
+            ).to_ws())
+
+            # Minimal safe version (no LLM yet)
+            model = {
+                "description": text
+            }
+
+        await broadcast(session_id, AgentEvent(
+            session_id=session_id,
+            agent=AgentName.OPERATIONAL,
+            step="file_parsed",
+            status=AgentStatus.RUNNING,
+            payload={
+                "note": "JSON successfully parsed into model",
             }
         ).to_ws())
-        
-        # Step 4: finished
+
+        # Step 3: finished
         await broadcast(session_id, AgentEvent(
             session_id=session_id,
             agent=AgentName.OPERATIONAL,
             step="finished",
             status=AgentStatus.COMPLETED,
-            payload={"note": "Operational Agent Finished"},
+            payload={"note": "Operational Agent Finished."}
         ).to_ws())
-        
+
         return model
-    
+
     except Exception as exc:
         await broadcast(session_id, AgentEvent(
             session_id=session_id,
@@ -202,7 +263,3 @@ async def run_operational_agent(
             error=str(exc)
         ).to_ws())
         raise
-
-
-        
-        

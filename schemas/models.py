@@ -81,6 +81,7 @@ class TRL(str, Enum):
 class AgentStatus(str, Enum):
     PENDING   = "pending"
     RUNNING   = "running"
+    WAITING_FOR_USER_INPUT = "waiting_user_input"
     COMPLETED = "completed"
     FAILED    = "failed"
     CANCELLED = "cancelled"
@@ -426,7 +427,7 @@ class SessionState(BaseModel):
     status: AgentStatus = AgentStatus.PENDING
     filename: Optional[str] = None
     domain_context: Optional[str] = None
-    iso_model: Optional[ISO15926Model] = None
+    iso_model: Optional[dict] = None
     research_result: Optional[ResearchResult] = None
     events: List[AgentEvent] = Field(default_factory=list)
     error: Optional[str] = None

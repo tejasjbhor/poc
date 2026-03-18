@@ -6,7 +6,9 @@ import traceback
 from typing import Callable, Coroutine
 
 import structlog
+import asyncio
 
+from state.session_store import session_file_queues
 from agents.operational_agent import run_operational_agent
 from agents.research_agent import run_research_agent
 from schemas.models import AgentEvent, AgentName, AgentStatus, SessionState
@@ -48,11 +50,17 @@ async def run_pipeline(
         },
     ))
 
+    # 1. Create queue for user file input
+    # Before running the operational agent:
+    if session_id not in session_file_queues:
+        session_file_queues[session_id] = asyncio.Queue()
+
     # Step 2: run operational agent
     try:
         iso_model = await run_operational_agent(
             session_id=session_id,
             broadcast=broadcast,
+            user_input_queue=session_file_queues[session_id],
         )
         
     except Exception as exc:
@@ -76,36 +84,7 @@ async def run_pipeline(
         step="iso_model_ready", status=AgentStatus.RUNNING,
         payload={
             "note": "ISO Model Ready",
-            "entities": len(iso_model.entities),
-            "requirements": len(iso_model.get_requirements()),
-            "relationships": len(iso_model.relationships),
         },
-    ))
-    
-
-    req_count = len(iso_model.get_requirements())
-    if req_count == 0:
-        await store.mark_completed(session_id)
-        await broadcast(session_id, _ev(
-            step="no_requirements_pipeline_completed",
-            status=AgentStatus.COMPLETED,
-            payload={"note": "Pipeline Completed : No Requirements"},
-        ))
-        
-        await broadcast(session_id, _ev(
-            agent=AgentName.SUPER,
-            step="session_completed",
-            status=AgentStatus.COMPLETED,
-            payload={"note": "Session Completed"},
-        ))
-        
-        return await store.get(session_id)
-
-    await broadcast(session_id, _ev(
-        agent=AgentName.RESEARCH,
-        step="research_agent_started",
-        status=AgentStatus.RUNNING,
-        payload={"note": "Research Agent Started"},
     ))
 
     try:

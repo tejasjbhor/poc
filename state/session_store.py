@@ -14,6 +14,8 @@ log = structlog.get_logger(__name__)
 
 SESSION_TTL = 14400   # 4 hours
 
+# Maps session_id → asyncio.Queue[str] for streaming file uploads
+session_file_queues: dict[str, asyncio.Queue] = {}
 
 class SessionStore:
     def __init__(self) -> None:
