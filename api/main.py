@@ -21,7 +21,11 @@ from fastapi.responses import JSONResponse
 from agents.super_agent import run_pipeline
 from api.ws_manager import ws_manager
 from schemas.models import (
-    AgentStatus, SessionStatusResponse, StartSessionResponse,
+    AgentEvent,
+    AgentName,
+    AgentStatus,
+    SessionStatusResponse,
+    StartSessionResponse,
 )
 from state.session_store import session_store
 from utils.config import get_settings
@@ -417,6 +421,20 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                         "status": "cancelled",
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                     })
+            
+            elif msg_type == "confirm_step2":
+                # Frontend confirmation hook for Research Agent "Step 2" (system understanding).
+                # We persist the confirmation as a Research Agent event, then broadcast it
+                # so connected clients can update their UI immediately.
+                ev = AgentEvent(
+                    session_id=session_id,
+                    agent=AgentName.RESEARCH,
+                    step="step2_confirmed",
+                    status=AgentStatus.COMPLETED,
+                    payload={"confirmed": True},
+                )
+                await session_store.append_event(session_id, ev)
+                await ws_manager.broadcast(session_id, ev.to_ws())
 
             else:
                 await ws_manager.send_direct(session_id, websocket, {

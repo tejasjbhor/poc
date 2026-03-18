@@ -216,6 +216,192 @@ async def classify_requirement(
     }
     return json.dumps(result)
 
+###############################################################################
+# Research agent tools (Agent-2 style, no search API keys required)
+#
+# NOTE: These are added to adopt the working notebook Agent-2 approach:
+# - Use public sources (DuckDuckGo HTML + ArXiv API) when Tavily is not desired
+# - Avoid LangChain multi-arg tool schema issues by accepting a SINGLE string arg
+#
+# We keep the original multi-arg `classify_requirement` above for compatibility
+# and do NOT delete it; the agents can choose which one to use.
+###############################################################################
+
+
+@tool
+async def classify_requirement_json(input_json: str) -> str:
+    """
+    Classify one requirement into domain_tag, criticality, and targeted
+    search queries for standards and technologies.
+
+    This tool accepts a SINGLE argument (JSON string) to avoid multi-arg
+    tool parsing issues in ReAct agents.
+
+    Args:
+        input_json: JSON string with fields:
+          req_id (str), req_statement (str), requirement_type (str),
+          rationale (str, optional), domain_context (str, optional)
+    """
+    try:
+        d = json.loads(input_json)
+    except Exception:
+        d = {
+            "req_id": "REQ-???",
+            "req_statement": input_json,
+            "requirement_type": "functional",
+            "rationale": "",
+            "domain_context": "",
+        }
+
+    req_id = d.get("req_id", "REQ-???")
+    stmt = d.get("req_statement", "") or ""
+    rat = d.get("rationale", "") or ""
+    ctx = d.get("domain_context", "") or ""
+    req_type = (d.get("requirement_type", "") or "functional").lower()
+
+    t = f"{stmt} {rat} {ctx}".lower()
+
+    # Criticality
+    if any(w in t for w in ["criticality", "criticité", "shutdown", "life safety",
+                            "nuclear", "radiation", "radioactive", "fissile",
+                            "containment", "explosion", "accident", "runaway"]):
+        criticality = "high"
+    elif any(w in t for w in ["shall", "must", "required", "critical", "important"]):
+        criticality = "medium"
+    else:
+        criticality = "low"
+
+    # Domain routing + query generation (kept intentionally simple)
+    if any(w in t for w in ["criticality", "fissile", "neutron", "subcritical", "criticité"]):
+        domain_tag = "nuclear_criticality_safety"
+        std_q = "nuclear criticality safety standard ANSI/ANS-8 IAEA subcritical fissile material"
+        tech_q = "criticality detection neutron detector criticality alarm system nuclear reprocessing"
+        arxiv_q = "nuclear criticality safety neutron detector criticality alarm"
+    elif any(w in t for w in ["radiation", "dose", "alara", "radioprotection", "shielding", "exposure"]):
+        domain_tag = "radiation_protection"
+        std_q = "radiation protection occupational exposure standard IAEA GSR Part 3 ICRP"
+        tech_q = "radiation monitoring dosimetry system personal detector nuclear facility"
+        arxiv_q = "radiation monitoring dosimetry nuclear facility ALARA"
+    elif any(w in t for w in ["purex", "solvent", "extraction", "throughput", "capacity", "processing", "yield", "mixer-settler", "pulsed column"]):
+        domain_tag = "process_performance"
+        std_q = "PUREX nuclear reprocessing solvent extraction process performance standard IAEA ASTM"
+        tech_q = "PUREX solvent extraction equipment pulsed column mixer settler nuclear reprocessing"
+        arxiv_q = "PUREX solvent extraction pulsed column mixer settler nuclear reprocessing"
+    elif req_type == "regulatory" or any(w in t for w in ["asn", "inb", "legifrance", "regulatory", "arrêté", "décret"]):
+        domain_tag = "regulatory_compliance"
+        std_q = "French nuclear regulation ASN INB requirements safety standards"
+        tech_q = "nuclear compliance management system software nuclear facility"
+        arxiv_q = "nuclear regulatory compliance facility safety case"
+    else:
+        domain_tag = "general_nuclear_engineering"
+        std_q = f"nuclear engineering standard requirement {stmt[:80]}"
+        tech_q = f"technology implementation solution {stmt[:60]}"
+        arxiv_q = f"nuclear engineering {stmt[:80]}"
+
+    # Fallback query tuned to requirement type
+    fallback = f"{req_type} requirement {domain_tag.replace('_', ' ')} standard"
+
+    return json.dumps({
+        "req_id": req_id,
+        "domain_tag": domain_tag,
+        "criticality": criticality,
+        "search_query_standards": std_q,
+        "search_query_technologies": tech_q,
+        "search_query_arxiv": arxiv_q,
+        "search_query_fallback": fallback,
+    })
+
+
+@tool
+async def search_web_ddg(query: str) -> str:
+    """
+    Search the web using DuckDuckGo HTML (no API key).
+    Returns JSON: {results: [{title,url,snippet}], count: N} or {error,...}
+    """
+    try:
+        import re
+        import urllib.parse
+        import httpx
+
+        q = urllib.parse.quote_plus(query)
+        url = f"https://html.duckduckgo.com/html/?q={q}"
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as c:
+            resp = await c.get(url, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "Accept": "text/html,application/xhtml+xml",
+            })
+            html = resp.text or ""
+
+        results = []
+        blocks = re.split(r"<div class=[\"']result[\"']", html)
+        for block in blocks[1:8]:
+            title_m = re.search(r"<a[^>]+class=[\"']result__a[\"'][^>]*>(.*?)</a>", block, re.DOTALL)
+            url_m = re.search(r"<a[^>]+href=[\"']([^\"'>]+)[\"']", block)
+            snippet_m = re.search(r"class=[\"']result__snippet[\"'][^>]*>(.*?)</(?:a|span)>", block, re.DOTALL)
+            if not (title_m and url_m):
+                continue
+            title = re.sub(r"<[^>]+>", "", title_m.group(1)).strip()
+            href = url_m.group(1)
+            snippet = re.sub(r"<[^>]+>", " ", snippet_m.group(1)).strip() if snippet_m else ""
+            snippet = re.sub(r"\s+", " ", snippet)[:300]
+
+            # Clean DDG redirect URLs
+            if href.startswith("//duckduckgo.com/l/?"):
+                uddg = re.search(r"uddg=([^&]+)", href)
+                if uddg:
+                    href = urllib.parse.unquote(uddg.group(1))
+
+            if href.startswith("http") and title:
+                results.append({"title": title, "url": href, "snippet": snippet})
+
+        if not results:
+            return json.dumps({"error": "No results parsed from DuckDuckGo HTML", "results": [], "raw_length": len(html)})
+
+        return json.dumps({"results": results, "count": len(results)})
+    except Exception as exc:
+        return json.dumps({"error": str(exc), "results": []})
+
+
+@tool
+async def search_arxiv(query: str) -> str:
+    """
+    Search ArXiv for relevant papers (no API key).
+    Returns JSON: {papers: [...], count: N} or {error,...}
+    """
+    try:
+        import urllib.parse
+        import xml.etree.ElementTree as ET
+        import httpx
+
+        q = urllib.parse.quote_plus(query)
+        url = f"http://export.arxiv.org/api/query?search_query=all:{q}&max_results=5&sortBy=relevance"
+        async with httpx.AsyncClient(timeout=20.0) as c:
+            resp = await c.get(url, headers={"User-Agent": "ResearchAgent/2.0"})
+            xml_text = resp.text or ""
+
+        ns = {"a": "http://www.w3.org/2005/Atom"}
+        root = ET.fromstring(xml_text)
+        papers = []
+        for entry in root.findall("a:entry", ns):
+            title = (entry.findtext("a:title", "", ns) or "").strip().replace("\n", " ")
+            summary = (entry.findtext("a:summary", "", ns) or "").strip().replace("\n", " ")[:350]
+            pid = entry.findtext("a:id", "", ns)
+            pub = entry.findtext("a:published", "", ns)
+            year = pub[:4] if pub else ""
+            authors = [a.findtext("a:name", "", ns) for a in entry.findall("a:author", ns)][:3]
+            if title and pid:
+                papers.append({
+                    "title": title,
+                    "authors": authors,
+                    "abstract": summary,
+                    "url": pid,
+                    "year": year,
+                })
+
+        return json.dumps({"papers": papers, "count": len(papers)})
+    except Exception as exc:
+        return json.dumps({"error": str(exc), "papers": [], "count": 0})
+
 
 @tool
 async def search_standards_web(query: str, max_results: int = 5) -> str:

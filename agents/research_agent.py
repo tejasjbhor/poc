@@ -2,15 +2,31 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import re
+import time
 from datetime import datetime, timezone
-from typing import Callable, Coroutine, List, Optional
+from typing import Any, Callable, Coroutine, Dict, List, Optional
 
-from langchain.agents import AgentExecutor, create_react_agent
 from langchain_anthropic import ChatAnthropic
 from langchain_core.callbacks import AsyncCallbackHandler
-from langchain_core.prompts import PromptTemplate
+from langchain_core.messages import HumanMessage
 import structlog
+
+# LangChain "agent" stack may fail to import in some environments if
+# langgraph versions are incompatible. We guard those imports so the
+# module can still be imported for mock/non-LLM flows.
+try:
+    from langchain.agents import AgentExecutor, create_react_agent  # type: ignore
+    from langchain_core.prompts import PromptTemplate  # type: ignore
+
+    _LANGCHAIN_AGENT_AVAILABLE = True
+except Exception:  # pragma: no cover
+    AgentExecutor = None  # type: ignore
+    create_react_agent = None  # type: ignore
+    PromptTemplate = None  # type: ignore
+    _LANGCHAIN_AGENT_AVAILABLE = False
 
 from schemas.models import (
     AgentEvent, AgentName, AgentStatus,
@@ -20,13 +36,20 @@ from schemas.models import (
     StandardMatch, TechnologyMatch, TRL,
 )
 from tools.agent_tools import (
-    classify_requirement,
-    search_standards_web,
-    search_technologies_web,
+    # --- legacy Tavily-based tools kept for compatibility (unused) ---
+    # classify_requirement,
+    # search_standards_web,
+    # search_technologies_web,
+    #
+    # --- Agent-2 style tools (adopted from working notebook) ---
+    classify_requirement_json,
+    search_web_ddg,
+    search_arxiv,
     fetch_page_content,
     build_research_record,
 )
 from utils.config import get_settings
+from state.session_store import session_store
 
 log = structlog.get_logger(__name__)
 cfg = get_settings()
@@ -80,21 +103,26 @@ Your task: for ONE engineering requirement, find:
   B) Existing technologies / products / systems that implement it
   C) Perform a gap analysis
 
-PROCESS for each requirement:
-1. Call classify_requirement → get domain_tag, criticality, search queries
-2. Call search_standards_web with search_query_standards → find governing standards
-3. Call fetch_page_content on the top 1-2 URLs → get actual clause text
-4. If no good results, call search_standards_web again with search_query_fallback
-5. Call search_technologies_web with search_query_technologies → find implementations
-6. Call fetch_page_content on top technology URL for more detail
-7. Call build_research_record with the complete assembled record JSON
+This agent uses an "Agent-2" style approach (from the working notebook):
+- Uses public sources (DuckDuckGo HTML + ArXiv API), no Tavily required.
+- Tool calls MUST match tool input expectations exactly.
+
+MANDATORY PROCESS for each requirement:
+1. Call classify_requirement_json with a JSON STRING:
+   {"req_id":"REQ-001","req_statement":"...","requirement_type":"...","rationale":"...","domain_context":"..."}
+2. Call search_web_ddg with search_query_standards → find standards/regulations pages
+3. Optionally call fetch_page_content on 1–2 best URLs from step 2
+4. Call search_arxiv with search_query_arxiv → find technical papers
+5. Call search_web_ddg with search_query_technologies → find vendors/products/solutions
+6. Optionally call fetch_page_content on best tech URL
+7. Call build_research_record ONCE with the complete assembled record JSON
 
 RECORD JSON structure for build_research_record:
 {{
   "req_id": "REQ-XXX",
   "req_statement": "<full statement>",
   "requirement_type": "<type>",
-  "domain_tag": "<from classify>",
+  "domain_tag": "<from classify_requirement_json>",
   "criticality": "<high/medium/low>",
   "function_name": "<subsystem name>",
   "rationale": "<rationale>",
@@ -172,10 +200,265 @@ Requirement to research:
 {agent_scratchpad}"""
 
 
+# Step 2 (system understanding) prompt + helpers (ported from notebook)
+
+_SYSTEM_PROMPT_STEP2 = """You are a research agent analyzing a system. The user has provided a JSON description of the system,
+including functions, domain, constraints, and active domains.
+
+Your task:
+1. Summarize the system understanding in a concise, structured way.
+2. Ask the user to confirm if your understanding is correct.
+3. Highlight any uncertain areas (e.g., ambiguous functions, missing constraints, unclear domains).
+4. Use clear, structured language for easy validation.
+5. Wait for user feedback before proceeding to research.
+
+Return ONLY valid JSON (no markdown, no preamble) in this exact shape:
+{
+  "function": "...",
+  "domain": "...",
+  "active_domains": ["..."],
+  "constraints": ["..."],
+  "uncertainties": ["..."]
+}
+"""
+
+
+def coerce_json(text: str) -> Any:
+    """Extract/parse JSON from an LLM response, tolerating markdown fences."""
+    raw = (text or "").strip()
+    raw = re.sub(r"^```json\s*|^```\s*|```$", "", raw).strip()
+    try:
+        return json.loads(raw)
+    except Exception:
+        # Fallback: extract the first JSON object/array in the string.
+        m = re.search(r"\{[\s\S]*\}|\[[\s\S]*\]", raw)
+        if not m:
+            raise
+        return json.loads(m.group())
+
+
+def _build_step2_payload(iso_model: ISO15926Model) -> Dict[str, Any]:
+    """Build a bounded JSON payload from our ISO model for Step 2."""
+    reqs = iso_model.get_requirements()
+    active_domains = sorted(
+        {
+            (r.requirement_type.value if getattr(r, "requirement_type", None) else "unknown")
+            for r in reqs
+            if getattr(r, "requirement_type", None)
+        }
+    )
+    constraints = []
+    uncertainties = []
+
+    for r in reqs[:25]:
+        # Keep these short to avoid huge prompts.
+        if r.rationale:
+            constraints.append(str(r.rationale)[:250])
+        else:
+            uncertainties.append(f"Missing rationale for {r.req_id or 'UNKNOWN'}")
+
+    # Deduplicate while preserving order
+    def _dedupe(items: List[str]) -> List[str]:
+        seen = set()
+        out = []
+        for x in items:
+            if x in seen:
+                continue
+            seen.add(x)
+            out.append(x)
+        return out
+
+    constraints = _dedupe([c for c in constraints if c])
+    uncertainties = _dedupe(uncertainties[:10])
+
+    example_items = []
+    for r in reqs[:3]:
+        example_items.append(
+            {
+                "req_id": r.req_id,
+                "statement": (r.statement or r.req_id or "")[:300],
+                "domain_tag": (r.requirement_type.value if getattr(r, "requirement_type", None) else None),
+                "function_name": r.function_id,
+                "priority": r.priority,
+                "rationale": (r.rationale or "")[:300],
+            }
+        )
+
+    return {
+        "meta": iso_model.meta.model_dump() if hasattr(iso_model.meta, "model_dump") else {},
+        "counts": {
+            "requirements": len(reqs),
+            "entities": len(iso_model.entities or []),
+        },
+        "active_domains": active_domains,
+        "constraints_sample": constraints[:25],
+        "uncertainties_sample": uncertainties[:10],
+        "example_items": example_items,
+    }
+
+
+def _build_step4_filter_prompt(understanding_json: str, candidates_json: str) -> str:
+    """Prompt from notebook build_step4_filter_prompt (adapted for our candidate shape)."""
+    return f"""You are a research agent evaluating candidate solutions.
+
+CONFIRMED UNDERSTANDING:
+{understanding_json}
+
+CANDIDATE SOLUTIONS FROM SEARCH:
+{candidates_json}
+
+Your task:
+1. Evaluate each candidate:
+   - Does it achieve the intended function? (gap analysis)
+   - Technology Readiness Level (TRL 1-9)
+   - Feasibility within domain constraints
+   - Realism: Realistic / Experimental / Science-Fiction
+2. Assign a score 0-100 to each candidate
+3. Return a filtered, ranked JSON array sorted by score:
+
+Return ONLY a JSON array (no preamble):
+[
+  {{
+    "name": "...",
+    "description": "...",
+    "score": 0-100,
+    "trl": "TRL N",
+    "feasibility": "Low|Medium|High",
+    "realism": "Realistic|Experimental|Science-Fiction",
+    "notes": "..."
+  }}
+]
+"""
+
+
+def _parse_trl_like(value: Any) -> TRL:
+    """Best-effort conversion of LLM TRL strings to our TRL enum."""
+    if value is None:
+        return TRL.UNKNOWN
+    raw = str(value).strip()
+    if not raw:
+        return TRL.UNKNOWN
+    # Most notebook outputs look like "TRL 4" or just "4".
+    raw_up = raw.upper().replace("-", " ").strip()
+    m = re.search(r"(?:TRL\s*)?(\d)\b", raw_up)
+    if m:
+        n = int(m.group(1))
+        if 1 <= n <= 9:
+            try:
+                return TRL(f"TRL {n}")
+            except Exception:
+                return TRL.UNKNOWN
+    # Direct match fallback (e.g., already "unknown")
+    try:
+        return TRL(raw)
+    except Exception:
+        return TRL.UNKNOWN
+
+
+def _tech_to_step4_candidate(t: TechnologyMatch, domain_tag: Optional[str]) -> Dict[str, Any]:
+    return {
+        "name": t.name,
+        "vendor": t.vendor,
+        "trl": t.trl.value,
+        "description": t.description,
+        "source": t.source_url,
+        "domain": domain_tag,
+        "notes": t.limitations,
+    }
+
+
+async def _rank_technologies_step4(
+    llm: ChatAnthropic,
+    system_understanding: Dict[str, Any],
+    record: RequirementResearchRecord,
+    req: EngineeringConstraint,
+) -> None:
+    """Rank/enrich technologies in-place using notebook Step 4 prompt."""
+    if not record.technologies or len(record.technologies) < 2:
+        return
+
+    # Notebook step uses a requirement-level "understanding" object.
+    # We embed both: system understanding + requirement context.
+    understanding_obj = {
+        "system": system_understanding,
+        "function": record.function_name or req.function_id,
+        "domain": record.domain_tag,
+        "description": (record.req_statement or "")[:300],
+        "constraints": [
+            (record.rationale or "")[:200],
+            *(system_understanding.get("constraints") or [])[:3],
+        ],
+    }
+    understanding_json = json.dumps(understanding_obj, indent=2, ensure_ascii=False)
+    candidates_json = json.dumps(
+        [_tech_to_step4_candidate(t, record.domain_tag) for t in record.technologies],
+        indent=2,
+        ensure_ascii=False,
+    )[:12000]
+
+    prompt = _build_step4_filter_prompt(understanding_json, candidates_json)
+    resp = await llm.ainvoke([HumanMessage(content=prompt)])
+    ranked_raw = coerce_json(getattr(resp, "content", "") or "")
+
+    if not isinstance(ranked_raw, list):
+        return
+
+    # Index original technologies for preserving vendor/examples.
+    by_name_and_source: Dict[tuple, TechnologyMatch] = {}
+    by_name: Dict[str, TechnologyMatch] = {}
+    for t in record.technologies:
+        by_name[t.name] = t
+        by_name_and_source[(t.name, t.source_url)] = t
+
+    ranked_techs: List[TechnologyMatch] = []
+    for item in ranked_raw:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name") or ""
+        src = item.get("source") or item.get("source_url") or item.get("url") or item.get("reference")
+        # Notebook step4 output uses only name/description/notes/trl; source is not required.
+        base = None
+        if name and src:
+            base = by_name_and_source.get((name, src))
+        if base is None and name:
+            base = by_name.get(name)
+
+        # Best-effort build; keep required fields safe.
+        trl_enum = _parse_trl_like(item.get("trl") or item.get("TRL") or (base.trl.value if base else None))
+        limitations = item.get("notes") or item.get("gap_analysis") or item.get("limitations")
+        description = item.get("description") or (base.description if base else "") or ""
+        source_url = src or (base.source_url if base else None)
+        vendor = item.get("vendor") or (base.vendor if base else None)
+
+        ranked_techs.append(
+            TechnologyMatch(
+                name=name or (base.name if base else "Unknown technology"),
+                vendor=vendor,
+                trl=trl_enum,
+                description=description,
+                deployment_examples=base.deployment_examples if base else None,
+                source_url=source_url,
+                limitations=limitations,
+            )
+        )
+
+    if ranked_techs:
+        record.technologies = ranked_techs
+        record.top_technology = ranked_techs[0].name if ranked_techs else None
+        record.top_tech_vendor = ranked_techs[0].vendor if ranked_techs else None
+        record.top_tech_trl = ranked_techs[0].trl.value if ranked_techs else None
+
+
 # Agent builder
 
 def _build_executor(session_id: str, req_id: str,
                     broadcast: BroadcastFn) -> AgentExecutor:
+    if not _LANGCHAIN_AGENT_AVAILABLE:
+        raise RuntimeError(
+            "LangChain agent stack is not available in this environment; "
+            "cannot run per-requirement ReAct research. "
+            "Run with no ANTHROPIC_API_KEY (mock mode) or fix LangChain/langgraph versions."
+        )
     llm = ChatAnthropic(
         model=cfg.anthropic_model,
         api_key=cfg.anthropic_api_key,
@@ -183,9 +466,9 @@ def _build_executor(session_id: str, req_id: str,
         temperature=0.2,
     )
     tools = [
-        classify_requirement,
-        search_standards_web,
-        search_technologies_web,
+        classify_requirement_json,
+        search_web_ddg,
+        search_arxiv,
         fetch_page_content,
         build_research_record,
     ]
@@ -338,9 +621,102 @@ async def run_research_agent(
                  "standard": iso_model.meta.standard},
     ).to_ws())
 
-    # Mock mode: no external web/LLM calls, just return an empty result so
-    # that the FastAPI endpoints and orchestration can be exercised.
-    if not cfg.anthropic_api_key:
+    # Step 2 (system understanding) must happen once per session.
+    # We pause here until the frontend sends: {"type":"confirm_step2"}.
+    #
+    # Note: if no LLM key is configured, we still broadcast a best-effort
+    # understanding and wait for confirmation (if the session store exists).
+    system_understanding: Dict[str, Any] = {}
+    confirmed_step2 = False
+    existing_state = await session_store.get(session_id)
+    if existing_state:
+        for ev in existing_state.events:
+            if ev.agent == AgentName.RESEARCH and ev.step == "step2_confirmed":
+                confirmed_step2 = True
+            if (
+                ev.agent == AgentName.RESEARCH
+                and ev.step == "step2_needs_confirmation"
+                and isinstance(ev.payload, dict)
+                and isinstance(ev.payload.get("system_understanding"), dict)
+            ):
+                system_understanding = ev.payload["system_understanding"]
+
+    if not confirmed_step2:
+        if cfg.anthropic_api_key:
+            llm_step2 = ChatAnthropic(
+                model=cfg.anthropic_model,
+                api_key=cfg.anthropic_api_key,
+                max_tokens=1024,
+                temperature=0.2,
+            )
+            payload = _build_step2_payload(iso_model)
+            prompt = _SYSTEM_PROMPT_STEP2 + "\n\nINPUT JSON:\n" + json.dumps(
+                payload, indent=2, ensure_ascii=False
+            )
+            resp = await llm_step2.ainvoke([HumanMessage(content=prompt)])
+            try:
+                parsed = coerce_json(getattr(resp, "content", "") or "")
+                if isinstance(parsed, dict):
+                    system_understanding = parsed
+            except Exception:
+                system_understanding = {}
+
+        if not system_understanding:
+            # Deterministic fallback when Step 2 can't be generated.
+            active_domains = sorted(
+            {
+                (r.requirement_type.value if getattr(r, "requirement_type", None) else "unknown")
+                for r in requirements
+                if getattr(r, "requirement_type", None)
+            }
+            )
+            system_understanding = {
+                "function": "Summarize system understanding from provided ISO15926 model",
+                "domain": iso_model.meta.standard or "unknown",
+                "active_domains": active_domains,
+                "constraints": [],
+                "uncertainties": [
+                    "LLM unavailable or returned unparseable JSON; please confirm manually."
+                ],
+            }
+
+        await broadcast(session_id, AgentEvent(
+            session_id=session_id,
+            agent=AgentName.RESEARCH,
+            step="step2_needs_confirmation",
+            status=AgentStatus.RUNNING,
+            payload={"system_understanding": system_understanding},
+        ).to_ws())
+
+        # Poll for confirmation event.
+        deadline = time.monotonic() + 10 * 60  # 10 minutes
+        while time.monotonic() < deadline:
+            state = await session_store.get(session_id)
+            if state:
+                for ev in state.events:
+                    if ev.agent == AgentName.RESEARCH and ev.step == "step2_confirmed":
+                        confirmed_step2 = True
+                        break
+            if confirmed_step2:
+                break
+            await asyncio.sleep(2.0)
+
+        if not confirmed_step2:
+            await broadcast(session_id, AgentEvent(
+                session_id=session_id,
+                agent=AgentName.RESEARCH,
+                step="step2_timeout",
+                status=AgentStatus.FAILED,
+                payload={"note": "Timed out waiting for frontend confirmation. Proceeding best-effort."},
+            ).to_ws())
+
+    log.info("research_agent.starting", session_id=session_id, requirements=total)
+
+    # Mock mode:
+    # - no LLM configured, OR
+    # - LangChain ReAct agent stack unavailable (langgraph mismatch).
+    # We already handled Step 2 above, so we can safely return an empty result.
+    if not cfg.anthropic_api_key or not _LANGCHAIN_AGENT_AVAILABLE:
         result = ResearchResult(
             session_id=session_id,
             source_standard=iso_model.meta.standard,
@@ -348,20 +724,30 @@ async def run_research_agent(
             records=[],
         )
         await broadcast(session_id, AgentEvent(
-            session_id=session_id, agent=AgentName.RESEARCH,
-            step="completed_mock", status=AgentStatus.COMPLETED,
+            session_id=session_id,
+            agent=AgentName.RESEARCH,
+            step="completed_mock",
+            status=AgentStatus.COMPLETED,
             payload={
-                "note": "Research agent running in mock mode (no LLM configured)",
-                "total": 0,
+                "note": (
+                    "Research agent running in mock mode "
+                    "(no LLM configured or LangChain agent stack unavailable)"
+                ),
+                "total": total,
             },
         ).to_ws())
         log.info("research_agent.completed_mock", session_id=session_id)
         return result
 
-    log.info("research_agent.starting", session_id=session_id,
-             requirements=total)
-
     records: List[RequirementResearchRecord] = []
+
+    # Separate LLM handle for Step 4 ranking (keeps per-requirement agent LLM stable).
+    llm_step4 = ChatAnthropic(
+        model=cfg.anthropic_model,
+        api_key=cfg.anthropic_api_key,
+        max_tokens=2048,
+        temperature=0.2,
+    )
 
     for idx, req in enumerate(requirements, 1):
         req_id = req.req_id or f"REQ-{idx:03d}"
@@ -393,6 +779,19 @@ async def run_research_agent(
 
             raw = result.get("output", "{}")
             record = _parse_record(raw, req, function_name)
+
+            # Notebook Step 4: rank/enrich technologies for this requirement record.
+            try:
+                await _rank_technologies_step4(
+                    llm=llm_step4,
+                    system_understanding=system_understanding or {},
+                    record=record,
+                    req=req,
+                )
+            except Exception as exc:
+                log.warning("research_agent.step4_rank_failed",
+                            session_id=session_id, req_id=req_id, exc=str(exc))
+
             records.append(record)
 
             await broadcast(session_id, AgentEvent(
