@@ -22,12 +22,8 @@ BroadcastFn = Callable[[str, dict], Coroutine]
 
 async def run_pipeline(
     session_id: str,
-    pdf_bytes: bytes,
-    filename: str,
     broadcast: BroadcastFn,
     store: SessionStore,
-    domain_context: str = "",
-    skip_research: bool = False,
 ) -> SessionState:
     """
     Full orchestration pipeline.
@@ -35,38 +31,40 @@ async def run_pipeline(
     Never raises — all errors are caught, persisted, and broadcast.
     """
 
-    def _ev(step: str, status: AgentStatus, payload=None, error=None):
+    def _ev(step: str, status: AgentStatus, payload=None, error=None, agent: AgentName = AgentName.SUPER,):
         return AgentEvent(
-            session_id=session_id, agent=AgentName.SUPER,
+            session_id=session_id, agent=agent,
             step=step, status=status, payload=payload, error=error,
         ).to_ws()
 
     # Step 1: signal start
     await broadcast(session_id, _ev(
-        step="pipeline_started", status=AgentStatus.RUNNING,
-        payload={"filename": filename, "skip_research": skip_research},
+        agent=AgentName.SUPER,
+        step="super_agent_started",
+        status=AgentStatus.RUNNING,
+        payload={
+        "note": "Super Agent Started",
+        "session_id": session_id,
+        },
     ))
 
     # Step 2: run operational agent
-    await broadcast(session_id, _ev(
-        step="dispatching_operational_agent", status=AgentStatus.RUNNING,
-    ))
-
     try:
         iso_model = await run_operational_agent(
-            pdf_bytes=pdf_bytes,
-            filename=filename,
             session_id=session_id,
             broadcast=broadcast,
-            domain_context=domain_context,
         )
+        
     except Exception as exc:
+
         tb = traceback.format_exc()
         log.error("pipeline.operational_failed",
                   session_id=session_id, exc=str(exc))
         await store.mark_failed(session_id, str(exc))
         await broadcast(session_id, _ev(
-            step="pipeline_failed", status=AgentStatus.FAILED,
+            step="pipeline_failed", 
+            status=AgentStatus.FAILED,
+            payload={"note": "Pipeline Failed"},
             error=str(exc),
         ))
         state = await store.get(session_id)
@@ -77,20 +75,13 @@ async def run_pipeline(
     await broadcast(session_id, _ev(
         step="iso_model_ready", status=AgentStatus.RUNNING,
         payload={
+            "note": "ISO Model Ready",
             "entities": len(iso_model.entities),
             "requirements": len(iso_model.get_requirements()),
             "relationships": len(iso_model.relationships),
         },
     ))
-
-    # Step 3: run research agent
-    if skip_research:
-        await store.mark_completed(session_id)
-        await broadcast(session_id, _ev(
-            step="pipeline_completed_no_research",
-            status=AgentStatus.COMPLETED,
-        ))
-        return await store.get(session_id)
+    
 
     req_count = len(iso_model.get_requirements())
     if req_count == 0:
@@ -98,12 +89,23 @@ async def run_pipeline(
         await broadcast(session_id, _ev(
             step="no_requirements_pipeline_completed",
             status=AgentStatus.COMPLETED,
+            payload={"note": "Pipeline Completed : No Requirements"},
         ))
+        
+        await broadcast(session_id, _ev(
+            agent=AgentName.SUPER,
+            step="session_completed",
+            status=AgentStatus.COMPLETED,
+            payload={"note": "Session Completed"},
+        ))
+        
         return await store.get(session_id)
 
     await broadcast(session_id, _ev(
-        step="dispatching_research_agent", status=AgentStatus.RUNNING,
-        payload={"requirements_to_research": req_count},
+        agent=AgentName.RESEARCH,
+        step="research_agent_started",
+        status=AgentStatus.RUNNING,
+        payload={"note": "Research Agent Started"},
     ))
 
     try:
@@ -111,7 +113,7 @@ async def run_pipeline(
             iso_model=iso_model,
             session_id=session_id,
             broadcast=broadcast,
-            domain_context=domain_context,
+            domain_context="",
         )
         await store.set_research_result(session_id, research_result)
         ex = research_result.executive_summary
@@ -127,8 +129,26 @@ async def run_pipeline(
                 "standards_cited": ex.standards_cited if ex else 0,
             },
         ))
+        
+        # ✅ SUCCESS here
+        await broadcast(session_id, _ev(
+            agent=AgentName.RESEARCH,
+            step="research_agent_completed",
+            status=AgentStatus.COMPLETED,
+            payload={"note": "Research Agent Completed"},
+        ))
 
     except Exception as exc:
+        state = await store.get(session_id)  # safe even if None
+        # ❌ FAILURE here FIRST
+        await broadcast(session_id, _ev(
+            agent=AgentName.RESEARCH,
+            step="research_agent_failed",
+            status=AgentStatus.FAILED,
+            payload={"note": "Research Agent Failed"},
+            error=str(exc),
+        ))
+        
         log.error("pipeline.research_failed",
                   session_id=session_id, exc=str(exc))
         #  ISO model saved
@@ -139,7 +159,15 @@ async def run_pipeline(
         await broadcast(session_id, _ev(
             step="pipeline_completed_research_partial",
             status=AgentStatus.COMPLETED,
+            payload={"note": "Pipeline Completed : Research Partial"},
             error=str(exc),
         ))
+        
+    await broadcast(session_id, _ev(
+        agent=AgentName.SUPER,
+        step="session_completed",
+        status=AgentStatus.COMPLETED,
+        payload={"note": "Session Completed"},
+    ))
 
     return await store.get(session_id)

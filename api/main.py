@@ -88,21 +88,13 @@ async def _broadcast(session_id: str, payload: dict) -> None:
 
 async def _run_pipeline_task(
     session_id: str,
-    pdf_bytes: bytes,
-    filename: str,
-    domain_context: str,
-    skip_research: bool,
 ) -> None:
     """Background task wrapper — catches all unhandled exceptions."""
     try:
         await run_pipeline(
             session_id=session_id,
-            pdf_bytes=pdf_bytes,
-            filename=filename,
             broadcast=_broadcast,
             store=session_store,
-            domain_context=domain_context,
-            skip_research=skip_research,
         )
     except Exception as exc:
         log.error("background_task.unhandled", session_id=session_id, exc=str(exc))
@@ -135,62 +127,32 @@ async def health():
     "/api/v1/sessions/start",
     response_model=StartSessionResponse,
     tags=["sessions"],
-    summary="Upload ISO PDF and start the multi-agent pipeline",
+    summary="Start a new multi-agent session",
     status_code=202,
 )
 async def start_session(
     background_tasks: BackgroundTasks,
-    file: UploadFile = File(..., description="ISO / engineering standards PDF"),
-    domain_context: Optional[str] = Form(
-        None,
-        description="Optional domain hint e.g. 'nuclear fuel reprocessing PUREX'"
-    ),
-    skip_research: bool = Form(
-        False,
-        description="Set true to only run the Operational Agent (no web search)"
-    ),
 ):
     """
-    Upload a PDF and immediately receive a session_id.
+    Start a new multi-agent session and immediately receive a session_id.
     Connect to ws_url for real-time progress.
     Poll status_url to check completion without WebSocket.
     """
     _require_api_key()
 
-    if not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
-
-    pdf_bytes = await file.read()
-    max_bytes = cfg.max_pdf_size_mb * 1024 * 1024
-    if len(pdf_bytes) > max_bytes:
-        raise HTTPException(
-            status_code=413,
-            detail=f"PDF too large. Maximum size is {cfg.max_pdf_size_mb} MB."
-        )
-    if len(pdf_bytes) < 100:
-        raise HTTPException(status_code=400, detail="PDF file appears to be empty.")
-
     session_id = str(uuid.uuid4())
-    dc = domain_context or ""
 
     # Create session record in Redis before starting background task
     await session_store.create(
         sid=session_id,
-        filename=file.filename,
-        domain_context=dc,
     )
 
     background_tasks.add_task(
         _run_pipeline_task,
         session_id=session_id,
-        pdf_bytes=pdf_bytes,
-        filename=file.filename,
-        domain_context=dc,
-        skip_research=skip_research,
     )
 
-    log.info("session.started", session_id=session_id,
-             filename=file.filename, size=len(pdf_bytes))
+    log.info("session.started", session_id=session_id)
 
     base = "/api/v1/sessions"
     return StartSessionResponse(

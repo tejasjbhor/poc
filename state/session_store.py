@@ -67,8 +67,7 @@ class SessionStore:
 
     # Public API
 
-    async def create(self, sid: str, filename: str,
-                     domain_context: str = "") -> SessionState:
+    async def create(self, sid: str, filename: str = "", domain_context: str = "",) -> SessionState:
         state = SessionState(
             session_id=sid,
             status=AgentStatus.PENDING,
