@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 import uuid
 from contextlib import asynccontextmanager
@@ -12,9 +11,8 @@ from typing import Optional
 
 import structlog
 from fastapi import (
-    BackgroundTasks, FastAPI, File, Form,
-    HTTPException, Query, Request, UploadFile,
-    WebSocket, WebSocketDisconnect, APIRouter
+    BackgroundTasks, FastAPI, HTTPException, Query, Request, UploadFile,
+    WebSocket, WebSocketDisconnect
 )
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -349,7 +347,10 @@ async def upload_input(session_id: str, request: Request, file: UploadFile = Non
         elif body.get("type") == "validation":
             await session_file_queues[session_id].put({
                 "type": "validation",
-                "action": body.get("action")
+                "action": body.get("action"),       # "approve" or "edit"
+                "data": body.get("data", {}),      # ✅ include the edited data
+                "agent": body.get("agent"),        # optional, helps multi-agent
+                "input_type": body.get("input_type")  # optional
             })
 
     return {"status": "ok"}

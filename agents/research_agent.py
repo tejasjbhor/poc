@@ -5,8 +5,6 @@ from __future__ import annotations
 import asyncio
 import json
 import re
-import time
-from datetime import datetime, timezone
 from typing import Any, Callable, Coroutine, Dict, List, Optional
 
 from langchain_anthropic import ChatAnthropic
@@ -31,9 +29,8 @@ except Exception:  # pragma: no cover
 from schemas.models import (
     AgentEvent, AgentName, AgentStatus,
     EngineeringConstraint,
-    GapSeverity, ISO15926Model,
     RequirementResearchRecord, ResearchResult,
-    StandardMatch, TechnologyMatch, TRL,
+    StandardMatch, TechnologyMatch, TRL, GapSeverity
 )
 from tools.agent_tools import (
     # --- legacy Tavily-based tools kept for compatibility (unused) ---
@@ -50,7 +47,7 @@ from tools.agent_tools import (
     search_crossref,
     search_osti,
     fetch_page_content,
-    build_research_record,
+    build_research_record
 )
 from utils.config import get_settings
 from state.session_store import session_store
@@ -117,82 +114,6 @@ class ResearchCallback(AsyncCallbackHandler):
 
 
 # Prompt
-
-_SYSTEM = """You are the Research Agent for a Systems Engineering platform.
-
-Your task: for ONE engineering requirement, find:
-  A) The governing standards / regulations that apply to it
-  B) Existing technologies / products / systems that implement it
-  C) Perform a gap analysis
-
-This agent uses an "Agent-2" style approach (from the working notebook):
-- Uses public sources (DuckDuckGo HTML + ArXiv API), no Tavily required.
-- Tool calls MUST match tool input expectations exactly.
-
-MANDATORY PROCESS for each requirement:
-1. Call classify_requirement_json with a JSON STRING:
-   {"req_id":"REQ-001","req_statement":"...","requirement_type":"...","rationale":"...","domain_context":"..."}
-2. Call search_web_ddg with search_query_standards → find standards/regulations pages
-3. Optionally call fetch_page_content on 1–2 best URLs from step 2
-4. Call search_arxiv with search_query_arxiv → find technical papers
-5. Call search_web_ddg with search_query_technologies → find vendors/products/solutions
-6. Optionally call fetch_page_content on best tech URL
-7. Call build_research_record ONCE with the complete assembled record JSON
-
-RECORD JSON structure for build_research_record:
-{{
-  "req_id": "REQ-XXX",
-  "req_statement": "<full statement>",
-  "requirement_type": "<type>",
-  "domain_tag": "<from classify_requirement_json>",
-  "criticality": "<high/medium/low>",
-  "function_name": "<subsystem name>",
-  "rationale": "<rationale>",
-  "is_assumption": false,
-  "standards": [
-  {{
-      "name": "<full standard name e.g. ANSI/ANS-8.3-1997 (R2020)>",
-      "clause": "<specific section e.g. section 5.2 Alarm system response>",
-      "verbatim_excerpt": "<exact quote from standard, max 300 chars>",
-      "similarity_score": 0.0-1.0,
-      "issuing_body": "<IAEA/IEC/ISO/ANSI/ASTM/NRC/IEEE>",
-      "authority_level": "<international_standard/national_standard/guidance/technical_report>",
-      "source_url": "<URL>",
-      "year": "<publication year>"
-    }}
-  ],
-  "technologies": [
-    {{
-      "name": "<technology or product name>",
-      "vendor": "<company name>",
-      "trl": "<TRL 1-9 or unknown>",
-      "description": "<what it does and how it meets the requirement>",
-      "deployment_examples": "<where it has been used>",
-      "source_url": "<URL>",
-      "limitations": "<known gaps or constraints>"
-    }}
-  ],
-  "gap_description": "<what part of the requirement is NOT covered by any standard or technology>",
-  "recommendation": "<specific actionable recommendation: which tech + which standard + what to define project-specifically>",
-  "search_queries_used": ["<query1>", "<query2>"]
-}}
-
-SIMILARITY SCORING GUIDE:
-  0.9-1.0 = standard directly addresses this exact requirement
-  0.7-0.9 = standard addresses same topic with minor scope differences
-  0.5-0.7 = standard addresses related topic, partial coverage
-  0.3-0.5 = standard tangentially related, significant gaps
-  0.0-0.3 = only loosely related
-
-TRL GUIDE:
-  TRL 9 = proven at industrial/operational scale
-  TRL 7-8 = demonstrated at pilot/prototype scale
-  TRL 4-6 = validated in lab / sub-system level
-  TRL 1-3 = research / concept stage
-
-Always respond with the final record from build_research_record.
-"""
-
 _REACT_TEMPLATE = """{system}
 
 Tools:
@@ -529,7 +450,8 @@ async def run_research_agent(
             agent=AgentName.RESEARCH,
             step="started",
             status=AgentStatus.RUNNING,
-            payload={"note": "Sending system description to LLM for analysis."}
+            payload={"note": "Sending system description to LLM for analysis.",
+                     "sub_status": "Waiting For LLM"}
         ).to_ws())
 
     system_understanding: Dict[str, Any] = {}
@@ -547,18 +469,22 @@ async def run_research_agent(
             ):
                 system_understanding = ev.payload["system_understanding"]
 
-    if not confirmed_step2:
-        if cfg.anthropic_api_key:
-            llm_step2 = ChatAnthropic(
-                model=cfg.anthropic_model,
-                api_key=cfg.anthropic_api_key,
-                max_tokens=1024,
-                temperature=0.2,
-            )
+    llm_step2 = None
+    if cfg.anthropic_api_key:
+        llm_step2 = ChatAnthropic(
+            model=cfg.anthropic_model,
+            api_key=cfg.anthropic_api_key,
+            max_tokens=1024,
+            temperature=0.2,
+        )
+
+    if not system_understanding:
+        if llm_step2:
             prompt = _SYSTEM_PROMPT_STEP2 + "\n\nINPUT JSON:\n" + json.dumps(
                 iso_model, indent=2, ensure_ascii=False
             )
             resp = await llm_step2.ainvoke([HumanMessage(content=prompt)])
+
             try:
                 parsed = coerce_json(getattr(resp, "content", "") or "")
                 if isinstance(parsed, dict):
@@ -567,106 +493,128 @@ async def run_research_agent(
                 system_understanding = {}
 
         await broadcast(session_id, AgentEvent(
-                session_id=session_id,
-                agent=AgentName.RESEARCH,
-                step="started",
-                status=AgentStatus.RUNNING,
-                payload={"note": "Got LLM response."}
-            ).to_ws())
+            session_id=session_id,
+            agent=AgentName.RESEARCH,
+            step="system_understanding_generated",
+            status=AgentStatus.RUNNING,
+            payload={"note": "Initial system understanding generated."}
+        ).to_ws())
 
+    # 🔁 LOOP until user approves
+    while not confirmed_step2:
+
+        input_data = None
+        # 1. Ask user for validation OR edit
         await broadcast(session_id, AgentEvent(
             session_id=session_id,
             agent=AgentName.RESEARCH,
             step="request_user_input",
-            status=AgentStatus.WAITING_FOR_USER_INPUT,
-            payload = {
+            status=AgentStatus.RUNNING,
+            payload={
                 "type": "user_input_request",
                 "input_type": "validation",
                 "label": "Validate generated data",
-                "instructions": "Please review the generated structure and approve to continue.",
-                "data": system_understanding,  # 👈 the structured JSON to display
+                "sub_status": "Waiting For User Input",
+                "instructions": "Review, edit if needed, then approve.",
+                "data": system_understanding,
                 "ui_hint": {
                     "render_as": "validation",
-                    "actions": ["approve"],
+                    "actions": ["approve", "edit"],
                     "primary_action": "approve",
-                    "approve_label": "Approve and continue"
+                    "approve_label": "Approve and continue",
+                    "edit_label": "Modify and resubmit",
+                    "editable": True
                 }
             }
         ).to_ws())
 
-        while not user_input_queue.empty():
-            try:
-                user_input_queue.get_nowait()
-            except asyncio.QueueEmpty:
-                break
-            
-        # Poll for confirmation event.
-        # Step: wait for validation input
+        # 2. Wait for user input
         elapsed = 0.0
         input_data = None
 
-        while input_data is None:
-            try:
-                input_data = user_input_queue.get_nowait()
-            except asyncio.QueueEmpty:
-                if elapsed >= timeout:
-                    break
-                await asyncio.sleep(poll_interval)
-                elapsed += poll_interval
+        try:
+            input_data = await asyncio.wait_for(
+                user_input_queue.get(),
+                timeout=timeout
+            )
+        except asyncio.TimeoutError:
+            input_data = None
 
-        # Handle timeout
+        # 3. Handle timeout
         if input_data is None:
             await broadcast(session_id, AgentEvent(
                 session_id=session_id,
                 agent=AgentName.RESEARCH,
                 step="step2_timeout",
                 status=AgentStatus.FAILED,
-                payload={"note": "Timed out waiting for user validation. Proceeding best-effort."},
+                payload={"note": "Timed out waiting for user input. Proceeding best-effort."},
+            ).to_ws())
+            break
+
+        action = input_data.get("action")
+
+        # ✅ APPROVE
+        if action == "approve":
+            confirmed_step2 = True
+
+            await broadcast(session_id, AgentEvent(
+                session_id=session_id,
+                agent=AgentName.RESEARCH,
+                step="step2_confirmed",
+                status=AgentStatus.RUNNING,
+                payload={"note": "User approved the data. Continuing..."},
             ).to_ws())
 
-        else:
-            # Handle validation response
-            if input_data.get("type") == "validation" and input_data.get("action") == "approve":
+        # 🔁 EDIT → RE-RUN LLM
+        elif action == "edit":
+            updated_data = input_data.get("data", {})
 
-                await broadcast(session_id, AgentEvent(
-                    session_id=session_id,
-                    agent=AgentName.RESEARCH,
-                    step="step2_confirmed",
-                    status=AgentStatus.RUNNING,
-                    payload={"note": "User approved the data. Continuing..."},
-                ).to_ws())
+            await broadcast(session_id, AgentEvent(
+                session_id=session_id,
+                agent=AgentName.RESEARCH,
+                step="step2_edit_received",
+                status=AgentStatus.RUNNING,
+                payload={"note": "User modifications received. Refining...",
+                         "sub_status": "Waiting For LLM"},
+            ).to_ws())
 
-                confirmed_step2 = True
+            if cfg.anthropic_api_key:
+                refine_prompt = (
+                    _SYSTEM_PROMPT_STEP2
+                    + "\n\nPREVIOUS OUTPUT:\n"
+                    + json.dumps(system_understanding, indent=2, ensure_ascii=False)
+                    + "\n\nUSER MODIFICATIONS:\n"
+                    + json.dumps(updated_data, indent=2, ensure_ascii=False)
+                    + "\n\nRefine the structure accordingly."
+                )
+
+                resp = await llm_step2.ainvoke([HumanMessage(content=refine_prompt)])
+
+                try:
+                    parsed = coerce_json(getattr(resp, "content", "") or "")
+                    if isinstance(parsed, dict):
+                        system_understanding = parsed
+                    else:
+                        system_understanding = updated_data
+                except Exception:
+                    system_understanding = updated_data
 
             else:
-                # Unexpected input
-                await broadcast(session_id, AgentEvent(
-                    session_id=session_id,
-                    agent=AgentName.RESEARCH,
-                    step="step2_invalid_input",
-                    status=AgentStatus.FAILED,
-                    payload={"note": "Invalid input received for validation step."},
-                ).to_ws())
+                # fallback if no LLM
+                system_understanding = updated_data
+                
+            # 🔥 CRITICAL: restart loop cleanly
+            continue
 
-        if not confirmed_step2:
+        # ❌ INVALID INPUT
+        else:
             await broadcast(session_id, AgentEvent(
                 session_id=session_id,
                 agent=AgentName.RESEARCH,
-                step="step2_timeout",
-                status=AgentStatus.FAILED,
-                payload={"note": "Timed out waiting for frontend confirmation. Proceeding best-effort."},
+                step="step2_invalid_input",
+                status=AgentStatus.RUNNING,
+                payload={"note": "Invalid input. Please approve or edit."},
             ).to_ws())
-
-
-        if not confirmed_step2:
-            await broadcast(session_id, AgentEvent(
-                session_id=session_id,
-                agent=AgentName.RESEARCH,
-                step="step2_timeout",
-                status=AgentStatus.FAILED,
-                payload={"note": "Timed out waiting for frontend confirmation. Proceeding best-effort."},
-            ).to_ws())
-
     log.info("research_agent.starting", session_id=session_id)
 
     records: List[RequirementResearchRecord] = []
@@ -684,6 +632,15 @@ async def run_research_agent(
 
     # dynamic query generation + source searches .
     # await _emit_progress(session_id, broadcast, "Step 3: Generating queries and searching...", "step3")  # commented: test results on right first
+
+    await broadcast(session_id, AgentEvent(
+        session_id=session_id,
+        agent=AgentName.RESEARCH,
+        step="building_research_queries",
+        status=AgentStatus.RUNNING,
+        payload={"note": "Building search queries from system understanding.",
+                 "sub_status": "Waiting For LLM",},
+    ).to_ws())
 
     queries: List[str] = []
     if cfg.anthropic_api_key and system_understanding:
@@ -717,6 +674,16 @@ async def run_research_agent(
             f"{basis} design verification",
             f"{basis} best practices",
         ]
+
+    await broadcast(session_id, AgentEvent(
+        session_id=session_id,
+        agent=AgentName.RESEARCH,
+        step="search_queries_ready",
+        status=AgentStatus.RUNNING,
+        payload={"note": "Search queries ready. Exectuing internet search",
+                 "sub_status": "Waiting For Internet Search",},
+    ).to_ws())
+
 
     # await _emit_progress(session_id, broadcast, "Step 3a: Generated search queries", "step3a")  # commented: test results on right first
     # for i, q in enumerate(queries, 1):
@@ -800,6 +767,15 @@ async def run_research_agent(
         except Exception as exc:
             pass  # await _emit_progress(session_id, broadcast, f"  - Web (DDG): error ({exc})", "step3b_src")
 
+    await broadcast(session_id, AgentEvent(
+        session_id=session_id,
+        agent=AgentName.RESEARCH,
+        step="extract_relevant_results",
+        status=AgentStatus.RUNNING,
+        payload={"note": "Internet search done. Extracting credible relevant results",
+                 "sub_status": "Waiting For LLM",},
+    ).to_ws())
+
     # await _emit_progress(session_id, broadcast, "Step 3b: Retrieved items (totals)", "step3b_totals")
     # await _emit_progress(session_id, broadcast, f"  - ArXiv papers          : {totals['arxiv']}", "step3b_totals")
     # await _emit_progress(session_id, broadcast, f"  - Semantic Scholar papers: {totals['semantic']}", "step3b_totals")
@@ -843,6 +819,15 @@ async def run_research_agent(
                 "verified": None,
             })
 
+    await broadcast(session_id, AgentEvent(
+        session_id=session_id,
+        agent=AgentName.RESEARCH,
+        step="search_queries_ready",
+        status=AgentStatus.RUNNING,
+        payload={"note": "Ranking relevant results",
+                 "sub_status": "Waiting For LLM",},
+    ).to_ws())
+
     # await _emit_progress(session_id, broadcast, "Step 3c: Candidates built", "step3c")
     # await _emit_progress(session_id, broadcast, "Step 4: Enriching candidates (no ranking)...", "step4")
 
@@ -868,78 +853,15 @@ async def run_research_agent(
         except Exception:
             ranked_candidates = candidates
 
-    rec = RequirementResearchRecord(
-        req_id="REQ-001",
-        req_statement=str(system_understanding.get("function", "System function")),
-        requirement_type="functional",
-        function_name=str(system_understanding.get("function", "")) or None,
-        rationale=str(system_understanding.get("domain", "")) or None,
-        criticality="medium",
-        domain_tag=str(system_understanding.get("domain", "")) or None,
-        standards=[],
-        technologies=[],
-        gap_severity=GapSeverity.NO_MATCH if not technologies else GapSeverity.PARTIAL,
-        gap_description="Automated dynamic search completed; standards linkage still needs deeper validation.",
-        recommendation="Review top candidates and align with project-specific standards clauses.",
-        search_queries_used=search_queries_used,
-    )
-    for c in ranked_candidates[:16]:
-        trl_text = str(c.get("TRL") or c.get("trl") or "Unknown").lower()
-        if "high" in trl_text:
-            trl = TRL.TRL8
-        elif "medium" in trl_text:
-            trl = TRL.TRL5
-        elif "low" in trl_text:
-            trl = TRL.TRL2
-        else:
-            trl = TRL.UNKNOWN
-        rec.technologies.append(
-            TechnologyMatch(
-                name=str(c.get("name") or "Candidate"),
-                trl=trl,
-                description=str(c.get("description") or c.get("function_alignment") or ""),
-                source_url=c.get("source"),
-                limitations=str(c.get("gap_analysis") or c.get("notes") or ""),
-            )
-        )
-    if rec.technologies:
-        rec.top_technology = rec.technologies[0].name
-        rec.top_tech_trl = rec.technologies[0].trl.value
-        rec.all_source_urls = [t.source_url for t in rec.technologies if t.source_url]
-    records.append(rec)
-
-    # ── Assemble final result ─────────────────────────────────────────────
-    result = ResearchResult(
-        session_id=session_id,
-        records=records,
-        enriched_candidates=ranked_candidates,
-    )
-    result.build_summary_table()
-    result.build_executive_summary()
-
-    await broadcast(session_id, AgentEvent(
-        session_id=session_id, agent=AgentName.RESEARCH,
-        step="completed", status=AgentStatus.COMPLETED,
-        payload={
-            "note": "Search completed. Showing Results",
-            "total": len(records),
-            "covered": result.executive_summary.covered if result.executive_summary else 0,
-            "partial": result.executive_summary.partial if result.executive_summary else 0,
-            "gaps": result.executive_summary.gaps if result.executive_summary else 0,
-            "no_match": result.executive_summary.no_match if result.executive_summary else 0,
-            "technologies_found": result.executive_summary.technologies_found if result.executive_summary else 0,
-            "enriched_candidates": ranked_candidates,
-        },
-    ).to_ws())
-
     # Display  candidates 
     await broadcast(session_id, AgentEvent(
         session_id=session_id,
         agent=AgentName.RESEARCH,
         step="request_user_input",
-        status=AgentStatus.WAITING_FOR_USER_INPUT,
+        status=AgentStatus.RUNNING,
         payload={
             "type": "user_input_request",
+            "sub_status": "Waiting For User Input",
             "input_type": "validation",
             "label": "Research Results — Enriched Candidates",
             "instructions": "Review the technology candidates and approve to dismiss.",
@@ -952,4 +874,4 @@ async def run_research_agent(
 
     log.info("research_agent.completed", session_id=session_id,
              records=len(records))
-    return result
+    return ranked_candidates

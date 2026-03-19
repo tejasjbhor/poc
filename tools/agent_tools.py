@@ -1,26 +1,26 @@
 """Tool definitions used by Operational and Research agents."""
-
+ 
 from __future__ import annotations
-
+ 
 import json
 import os
 from datetime import datetime, timezone
 from typing import Optional
-
+ 
 from langchain_core.tools import tool
 import structlog
-
+ 
 log = structlog.get_logger(__name__)
-
-
+ 
+ 
 # Operational agent tools
-
+ 
 @tool
 async def extract_pdf_text(pdf_bytes_hex: str) -> str:
     """
     Extract all text from a PDF supplied as a hex-encoded byte string.
     Returns page-delimited text. Caps at 120 000 characters for large docs.
-
+ 
     Args:
         pdf_bytes_hex: the PDF file bytes encoded as a hexadecimal string
     """
@@ -37,14 +37,14 @@ async def extract_pdf_text(pdf_bytes_hex: str) -> str:
         return text[:120_000]
     except Exception as exc:
         return f"ERROR extracting PDF: {exc}"
-
-
+ 
+ 
 @tool
 async def extract_pdf_sections(pdf_bytes_hex: str, keywords: str) -> str:
     """
     Extract only pages from a PDF that contain any of the given keywords.
     Use this to focus on requirement-dense sections of large documents.
-
+ 
     Args:
         pdf_bytes_hex: PDF file bytes as hexadecimal string
         keywords: comma-separated keywords e.g. "shall,requirement,constraint,must"
@@ -65,8 +65,8 @@ async def extract_pdf_sections(pdf_bytes_hex: str, keywords: str) -> str:
         return result[:100_000]
     except Exception as exc:
         return f"ERROR: {exc}"
-
-
+ 
+ 
 @tool
 async def get_iso15926_schema() -> str:
     """
@@ -109,10 +109,10 @@ async def get_iso15926_schema() -> str:
         )
     }
     return json.dumps(schema, indent=2)
-
-
+ 
+ 
 # Research agent tools
-
+ 
 @tool
 async def classify_requirement(
     req_id: str,
@@ -124,10 +124,10 @@ async def classify_requirement(
     """
     Classify a single requirement to determine its domain tag, criticality,
     and the best search queries to use when researching it.
-
+ 
     Returns a JSON object with: domain_tag, criticality, search_query_standards,
     search_query_technologies, priority_databases.
-
+ 
     Args:
         req_id: requirement identifier e.g. REQ-001
         req_statement: the full requirement statement
@@ -140,7 +140,7 @@ async def classify_requirement(
     rat_lower  = rationale.lower()
     ctx_lower  = domain_context.lower()
     combined   = f"{stmt_lower} {rat_lower} {ctx_lower}"
-
+ 
     # --- criticality ---
     if any(w in combined for w in ["criticality", "shutdown", "life safety",
                                     "nuclear", "radiation", "radioactive",
@@ -150,7 +150,7 @@ async def classify_requirement(
         criticality = "medium"
     else:
         criticality = "low"
-
+ 
     # --- domain tag ---
     if any(w in combined for w in ["criticality", "fissile", "neutron", "nuclear safety"]):
         domain_tag = "nuclear_criticality_safety"
@@ -179,14 +179,14 @@ async def classify_requirement(
     else:
         domain_tag = "general_engineering"
         priority_dbs = ["ISO", "IEC", "IEEE", "ASTM"]
-
+ 
     # --- search query generation ---
     # Keep queries specific and targeted
     base = req_statement[:120].strip()
-
+ 
     # Standards query: domain + requirement essence + standard family
     std_query = f"{base} {priority_dbs[0]} standard requirements"
-
+ 
     # Technology query: what systems/products implement this
     if domain_tag == "nuclear_criticality_safety":
         tech_query = f"criticality detection system neutron detector nuclear reprocessing technology"
@@ -204,7 +204,7 @@ async def classify_requirement(
         tech_query = f"nuclear material accountancy safeguards technology IAEA"
     else:
         tech_query = f"{base} technology implementation solution"
-
+ 
     result = {
         "req_id": req_id,
         "domain_tag": domain_tag,
@@ -215,23 +215,23 @@ async def classify_requirement(
         "search_query_fallback": f"{requirement_type} requirement {domain_tag} standard",
     }
     return json.dumps(result)
-
+ 
 ###############################################################################
 # Research agent tools (Agent-2 style)
 #
-# 
+#
 ###############################################################################
-
-
+ 
+ 
 @tool
 async def classify_requirement_json(input_json: str) -> str:
     """
     Classify one requirement into domain_tag, criticality, and targeted
     search queries for standards and technologies.
-
+ 
     This tool accepts a SINGLE argument (JSON string) to avoid multi-arg
     tool parsing issues in ReAct agents.
-
+ 
     Args:
         input_json: JSON string with fields:
           req_id (str), req_statement (str), requirement_type (str),
@@ -247,15 +247,15 @@ async def classify_requirement_json(input_json: str) -> str:
             "rationale": "",
             "domain_context": "",
         }
-
+ 
     req_id = d.get("req_id", "REQ-???")
     stmt = d.get("req_statement", "") or ""
     rat = d.get("rationale", "") or ""
     ctx = d.get("domain_context", "") or ""
     req_type = (d.get("requirement_type", "") or "functional").lower()
-
+ 
     t = f"{stmt} {rat} {ctx}".lower()
-
+ 
     # Criticality
     if any(w in t for w in ["criticality", "criticité", "shutdown", "life safety",
                             "nuclear", "radiation", "radioactive", "fissile",
@@ -265,7 +265,7 @@ async def classify_requirement_json(input_json: str) -> str:
         criticality = "medium"
     else:
         criticality = "low"
-
+ 
     # Domain routing + query generation (kept intentionally simple)
     if any(w in t for w in ["criticality", "fissile", "neutron", "subcritical", "criticité"]):
         domain_tag = "nuclear_criticality_safety"
@@ -292,10 +292,10 @@ async def classify_requirement_json(input_json: str) -> str:
         std_q = f"nuclear engineering standard requirement {stmt[:80]}"
         tech_q = f"technology implementation solution {stmt[:60]}"
         arxiv_q = f"nuclear engineering {stmt[:80]}"
-
+ 
     # Fallback query tuned to requirement type
     fallback = f"{req_type} requirement {domain_tag.replace('_', ' ')} standard"
-
+ 
     return json.dumps({
         "req_id": req_id,
         "domain_tag": domain_tag,
@@ -305,8 +305,8 @@ async def classify_requirement_json(input_json: str) -> str:
         "search_query_arxiv": arxiv_q,
         "search_query_fallback": fallback,
     })
-
-
+ 
+ 
 @tool
 async def search_web_ddg(query: str) -> str:
     """
@@ -317,7 +317,7 @@ async def search_web_ddg(query: str) -> str:
         import re
         import urllib.parse
         import httpx
-
+ 
         q = urllib.parse.quote_plus(query)
         url = f"https://html.duckduckgo.com/html/?q={q}"
         async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as c:
@@ -326,7 +326,7 @@ async def search_web_ddg(query: str) -> str:
                 "Accept": "text/html,application/xhtml+xml",
             })
             html = resp.text or ""
-
+ 
         results = []
         blocks = re.split(r"<div class=[\"']result[\"']", html)
         for block in blocks[1:8]:
@@ -339,24 +339,24 @@ async def search_web_ddg(query: str) -> str:
             href = url_m.group(1)
             snippet = re.sub(r"<[^>]+>", " ", snippet_m.group(1)).strip() if snippet_m else ""
             snippet = re.sub(r"\s+", " ", snippet)[:300]
-
+ 
             # Clean DDG redirect URLs
             if href.startswith("//duckduckgo.com/l/?"):
                 uddg = re.search(r"uddg=([^&]+)", href)
                 if uddg:
                     href = urllib.parse.unquote(uddg.group(1))
-
+ 
             if href.startswith("http") and title:
                 results.append({"title": title, "url": href, "snippet": snippet})
-
+ 
         if not results:
             return json.dumps({"error": "No results parsed from DuckDuckGo HTML", "results": [], "raw_length": len(html)})
-
+ 
         return json.dumps({"results": results, "count": len(results)})
     except Exception as exc:
         return json.dumps({"error": str(exc), "results": []})
-
-
+ 
+ 
 @tool
 async def search_arxiv(query: str) -> str:
     """
@@ -367,13 +367,13 @@ async def search_arxiv(query: str) -> str:
         import urllib.parse
         import xml.etree.ElementTree as ET
         import httpx
-
+ 
         q = urllib.parse.quote_plus(query)
         url = f"http://export.arxiv.org/api/query?search_query=all:{q}&max_results=5&sortBy=relevance"
         async with httpx.AsyncClient(timeout=20.0) as c:
             resp = await c.get(url, headers={"User-Agent": "ResearchAgent/2.0"})
             xml_text = resp.text or ""
-
+ 
         ns = {"a": "http://www.w3.org/2005/Atom"}
         root = ET.fromstring(xml_text)
         papers = []
@@ -392,18 +392,18 @@ async def search_arxiv(query: str) -> str:
                     "url": pid,
                     "year": year,
                 })
-
+ 
         return json.dumps({"papers": papers, "count": len(papers)})
     except Exception as exc:
         return json.dumps({"error": str(exc), "papers": [], "count": 0})
-
-
+ 
+ 
 @tool
 async def search_semantic_scholar(query: str) -> str:
     """Semantic Scholar search."""
     try:
         import httpx
-
+ 
         url = "https://api.semanticscholar.org/graph/v1/paper/search"
         params = {
             "query": query,
@@ -413,7 +413,7 @@ async def search_semantic_scholar(query: str) -> str:
         async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as c:
             resp = await c.get(url, params=params, headers={"User-Agent": "ResearchAgent/2.0"})
             data = resp.json()
-
+ 
         papers = []
         for p in (data or {}).get("data", []) or []:
             title = (p or {}).get("title")
@@ -430,24 +430,24 @@ async def search_semantic_scholar(query: str) -> str:
                 "url": p.get("url"),
                 "external_ids": p.get("externalIds"),
             })
-
+ 
         return json.dumps({"papers": papers, "count": len(papers)})
     except Exception as exc:
         return json.dumps({"error": str(exc), "papers": []})
-
-
+ 
+ 
 @tool
 async def search_openalex(query: str) -> str:
     """OpenAlex works search ."""
     try:
         import httpx
-
+ 
         url = "https://api.openalex.org/works"
         params = {"search": query, "per-page": 8}
         async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as c:
             resp = await c.get(url, params=params, headers={"User-Agent": "ResearchAgent/2.0"})
             data = resp.json()
-
+ 
         works = []
         for w in (data or {}).get("results", []) or []:
             title = (w or {}).get("title")
@@ -464,24 +464,24 @@ async def search_openalex(query: str) -> str:
                     else None
                 ),
             })
-
+ 
         return json.dumps({"works": works, "count": len(works)})
     except Exception as exc:
         return json.dumps({"error": str(exc), "works": []})
-
-
+ 
+ 
 @tool
 async def search_crossref(query: str) -> str:
     """Crossref works search """
     try:
         import httpx
-
+ 
         url = "https://api.crossref.org/works"
         params = {"query": query, "rows": 8}
         async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as c:
             resp = await c.get(url, params=params, headers={"User-Agent": "ResearchAgent/2.0"})
             data = resp.json()
-
+ 
         items = []
         for it in (((data or {}).get("message") or {}).get("items") or [])[:8]:
             title = (it.get("title") or [""])[0]
@@ -494,24 +494,24 @@ async def search_crossref(query: str) -> str:
                 "doi": it.get("DOI"),
                 "type": it.get("type"),
             })
-
+ 
         return json.dumps({"items": items, "count": len(items)})
     except Exception as exc:
         return json.dumps({"error": str(exc), "items": []})
-
-
+ 
+ 
 @tool
 async def search_osti(query: str) -> str:
     """OSTI.gov records search."""
     try:
         import httpx
-
+ 
         url = "https://www.osti.gov/api/v1/records"
         params = {"q": query, "page": 0, "size": 8}
         async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as c:
             resp = await c.get(url, params=params, headers={"User-Agent": "ResearchAgent/2.0"})
             data = resp.json()
-
+ 
         records = []
         for r in (data or {}).get("records", []) or []:
             title = r.get("title")
@@ -523,18 +523,18 @@ async def search_osti(query: str) -> str:
                 "url": r.get("product_nsti_url") or r.get("osti_id") or r.get("doi") or r.get("landing_page_url"),
                 "doi": r.get("doi"),
             })
-
+ 
         return json.dumps({"records": records, "count": len(records)})
     except Exception as exc:
         return json.dumps({"error": str(exc), "records": []})
-
-
+ 
+ 
 @tool
 async def search_standards_web(query: str, max_results: int = 5) -> str:
     """
     Search the web for standards, regulations, and normative documents
     that govern an engineering requirement. Uses Tavily search API.
-
+ 
     Args:
         query: targeted search query for standards (e.g. "ANSI ANS-8 criticality alarm nuclear")
         max_results: number of results, 3–8
@@ -544,7 +544,7 @@ async def search_standards_web(query: str, max_results: int = 5) -> str:
         api_key = os.environ.get("TAVILY_API_KEY", "")
         if not api_key:
             return json.dumps({"error": "TAVILY_API_KEY not set", "results": []})
-
+ 
         client = AsyncTavilyClient(api_key=api_key)
         resp = await client.search(
             query=query,
@@ -575,14 +575,14 @@ async def search_standards_web(query: str, max_results: int = 5) -> str:
     except Exception as exc:
         log.error("standards_search.error", exc=str(exc))
         return json.dumps({"error": str(exc), "results": []})
-
-
+ 
+ 
 @tool
 async def search_technologies_web(query: str, max_results: int = 5) -> str:
     """
     Search the web for technologies, products, systems, and implementations
     that exist to satisfy an engineering requirement.
-
+ 
     Args:
         query: targeted technology search (e.g. "He-3 neutron detector criticality alarm system vendor")
         max_results: number of results, 3–8
@@ -592,7 +592,7 @@ async def search_technologies_web(query: str, max_results: int = 5) -> str:
         api_key = os.environ.get("TAVILY_API_KEY", "")
         if not api_key:
             return json.dumps({"error": "TAVILY_API_KEY not set", "results": []})
-
+ 
         client = AsyncTavilyClient(api_key=api_key)
         resp = await client.search(
             query=query,
@@ -617,14 +617,14 @@ async def search_technologies_web(query: str, max_results: int = 5) -> str:
         return json.dumps(output)
     except Exception as exc:
         return json.dumps({"error": str(exc), "results": []})
-
-
+ 
+ 
 @tool
 async def fetch_page_content(url: str, max_chars: int = 3000) -> str:
     """
     Fetch the full text content of a webpage URL.
     Use this to get the actual clause text from a standard reference page.
-
+ 
     Args:
         url: the URL to fetch
         max_chars: maximum characters to return (default 3000)
@@ -648,14 +648,14 @@ async def fetch_page_content(url: str, max_chars: int = 3000) -> str:
             return text[:int(max_chars)]
     except Exception as exc:
         return f"ERROR fetching {url}: {exc}"
-
-
+ 
+ 
 @tool
 async def build_research_record(record_json: str) -> str:
     """
     Validate and serialise the final research record for one requirement.
     Call this ONCE per requirement after all searches are done.
-
+ 
     Args:
         record_json: JSON string with all fields for RequirementResearchRecord.
           Required: req_id, req_statement, requirement_type, domain_tag,
@@ -668,11 +668,11 @@ async def build_research_record(record_json: str) -> str:
     """
     try:
         data = json.loads(record_json)
-
+ 
         # Derive convenience fields
         stds = data.get("standards", [])
         techs = data.get("technologies", [])
-
+ 
         if stds:
             best = max(stds, key=lambda s: s.get("similarity_score", 0))
             data.setdefault("best_standard", best.get("name"))
@@ -681,13 +681,13 @@ async def build_research_record(record_json: str) -> str:
             data.setdefault("best_similarity_score", best.get("similarity_score", 0.0))
         else:
             data.setdefault("best_similarity_score", 0.0)
-
+ 
         if techs:
             top = techs[0]
             data.setdefault("top_technology", top.get("name"))
             data.setdefault("top_tech_vendor", top.get("vendor"))
             data.setdefault("top_tech_trl", top.get("trl"))
-
+ 
         # Derive gap_severity from best_similarity_score
         score = data.get("best_similarity_score", 0.0)
         if not data.get("standards"):
@@ -698,7 +698,7 @@ async def build_research_record(record_json: str) -> str:
             data["gap_severity"] = "partial"
         else:
             data["gap_severity"] = "gap"
-
+ 
         # Collect source URLs
         urls = []
         for s in stds:
@@ -709,7 +709,7 @@ async def build_research_record(record_json: str) -> str:
                 urls.append(t["source_url"])
         data["all_source_urls"] = list(dict.fromkeys(urls))  # dedupe
         data["researched_at"] = datetime.now(timezone.utc).isoformat()
-
+ 
         return json.dumps({"status": "ok", "record": data})
     except Exception as exc:
         return json.dumps({"status": "error", "error": str(exc)})

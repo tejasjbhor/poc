@@ -3,20 +3,14 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from datetime import datetime, timezone
 from typing import Callable, Coroutine, Optional
 
 import asyncio
 
-from langchain.agents import AgentExecutor, create_react_agent
-from langchain_anthropic import ChatAnthropic
 from langchain_core.callbacks import AsyncCallbackHandler
-from langchain_core.prompts import PromptTemplate
 import structlog
 
 from schemas.models import AgentEvent, AgentName, AgentStatus
-from tools.agent_tools import extract_pdf_text, extract_pdf_sections, get_iso15926_schema
 from utils.config import get_settings
 
 log = structlog.get_logger(__name__)
@@ -133,7 +127,6 @@ Domain context: {domain_context}
 
 # Public runner
 
-from pathlib import Path
 from schemas.models import AgentEvent, AgentName, AgentStatus
 
 async def run_operational_agent(
@@ -164,9 +157,10 @@ async def run_operational_agent(
             session_id=session_id,
             agent=AgentName.OPERATIONAL,
             step="request_user_input",
-            status=AgentStatus.WAITING_FOR_USER_INPUT,
+            status=AgentStatus.RUNNING,
             payload={
                 "type": "user_input_request",
+                "sub_status": "Waiting For User Input",
                 "input_type": "multi",
                 "allowed_inputs": ["file_upload", "text"],
                 "input_format": {

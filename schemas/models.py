@@ -81,7 +81,6 @@ class TRL(str, Enum):
 class AgentStatus(str, Enum):
     PENDING   = "pending"
     RUNNING   = "running"
-    WAITING_FOR_USER_INPUT = "waiting_user_input"
     COMPLETED = "completed"
     FAILED    = "failed"
     CANCELLED = "cancelled"
