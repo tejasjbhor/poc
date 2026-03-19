@@ -37,6 +37,7 @@ from utils.logging import configure_logging
 
 log = structlog.get_logger(__name__)
 cfg = get_settings()
+_last_session_id: Optional[str] = None
 
 
 # Lifespan
@@ -153,7 +154,9 @@ async def start_session(
     """
     _require_api_key()
 
+    global _last_session_id
     session_id = str(uuid.uuid4())
+    _last_session_id = session_id
 
     # Create session record in Redis before starting background task
     await session_store.create(
@@ -179,6 +182,109 @@ async def start_session(
             "or poll status_url."
         ),
     )
+
+
+async def _resolve_data_session(session_id: Optional[str]) -> Optional[object]:
+    sid = session_id or _last_session_id
+    if not sid:
+        return None
+    return await session_store.get(sid)
+
+
+@app.get("/data", tags=["debug"], summary="List available data tables for UI Data View")
+async def list_data_tables(session_id: Optional[str] = Query(None)):
+    state = await _resolve_data_session(session_id)
+    if not state:
+        return []
+
+    tables: list[str] = ["status", "events"]
+    if state.iso_model is not None:
+        tables.extend(["iso_entities", "iso_relationships", "iso_properties"])
+    if state.research_result is not None:
+        tables.extend(["research_summary", "research_records", "research_technologies"])
+        if getattr(state.research_result, "enriched_candidates", None):
+            tables.append("candidates_enriched")
+    return tables
+
+
+@app.get("/data/{table}", tags=["debug"], summary="Get table rows for UI Data View")
+async def get_data_table(table: str, session_id: Optional[str] = Query(None)):
+    state = await _resolve_data_session(session_id)
+    if not state:
+        return []
+
+    if table == "status":
+        return [{
+            "session_id": state.session_id,
+            "status": state.status.value,
+            "filename": state.filename,
+            "events_count": len(state.events),
+            "has_iso_model": state.iso_model is not None,
+            "has_research": state.research_result is not None,
+            "error": state.error,
+            "created_at": state.created_at,
+            "updated_at": state.updated_at,
+        }]
+
+    if table == "events":
+        return [e.to_ws() for e in state.events]
+
+    if table in ("iso_entities", "iso_relationships", "iso_properties"):
+        if state.iso_model is None:
+            iso = {}
+        elif isinstance(state.iso_model, dict):
+            iso = state.iso_model
+        else:
+            iso = state.iso_model.model_dump()
+        key = table.split("_", 1)[1]
+        rows = iso.get(key, [])
+        return rows if isinstance(rows, list) else []
+
+    if table == "research_summary":
+        if state.research_result is None:
+            return []
+        ex = state.research_result.executive_summary
+        if ex is None:
+            return []
+        return [ex.model_dump()]
+
+    if table == "research_records":
+        if state.research_result is None:
+            return []
+        return [row.model_dump() for row in state.research_result.summary_table]
+
+    if table == "research_technologies":
+        if state.research_result is None:
+            return []
+        rows: list[dict] = []
+        for rec in state.research_result.records:
+            for tech in rec.technologies:
+                rows.append({
+                    "req_id": rec.req_id,
+                    "requirement_type": rec.requirement_type,
+                    "domain_tag": rec.domain_tag,
+                    **tech.model_dump(),
+                })
+        return rows
+
+    if table == "candidates_enriched":
+        if state.research_result is None:
+            return []
+        candidates = getattr(state.research_result, "enriched_candidates", None) or []
+        if not candidates:
+            return []
+        # Flatten for table display; stringify nested objects like verification
+        rows: list[dict] = []
+        for c in candidates:
+            if not isinstance(c, dict):
+                continue
+            row = dict(c)
+            if "verification" in row and isinstance(row["verification"], dict):
+                row["verification"] = json.dumps(row["verification"])[:200]
+            rows.append(row)
+        return rows
+
+    return []
 
 
 @app.get(
@@ -218,7 +324,8 @@ async def get_model(session_id: str):
             status_code=202,
             detail="ISO model not yet available — operational agent still running.",
         )
-    return state.iso_model.model_dump()
+    iso = state.iso_model
+    return iso if isinstance(iso, dict) else iso.model_dump()
 
 @app.post("/api/v1/sessions/{session_id}/input")
 async def upload_input(session_id: str, request: Request, file: UploadFile = None):

@@ -13,3 +13,4 @@ __pycache__/
 test_v0.1/
 # VS Code settings
 .vscode/
+poc_front/

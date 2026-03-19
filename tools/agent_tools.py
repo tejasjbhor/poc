@@ -217,14 +217,9 @@ async def classify_requirement(
     return json.dumps(result)
 
 ###############################################################################
-# Research agent tools (Agent-2 style, no search API keys required)
+# Research agent tools (Agent-2 style)
 #
-# NOTE: These are added to adopt the working notebook Agent-2 approach:
-# - Use public sources (DuckDuckGo HTML + ArXiv API) when Tavily is not desired
-# - Avoid LangChain multi-arg tool schema issues by accepting a SINGLE string arg
-#
-# We keep the original multi-arg `classify_requirement` above for compatibility
-# and do NOT delete it; the agents can choose which one to use.
+# 
 ###############################################################################
 
 
@@ -401,6 +396,137 @@ async def search_arxiv(query: str) -> str:
         return json.dumps({"papers": papers, "count": len(papers)})
     except Exception as exc:
         return json.dumps({"error": str(exc), "papers": [], "count": 0})
+
+
+@tool
+async def search_semantic_scholar(query: str) -> str:
+    """Semantic Scholar search."""
+    try:
+        import httpx
+
+        url = "https://api.semanticscholar.org/graph/v1/paper/search"
+        params = {
+            "query": query,
+            "limit": 8,
+            "fields": "title,year,authors,url,abstract,tldr,externalIds",
+        }
+        async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as c:
+            resp = await c.get(url, params=params, headers={"User-Agent": "ResearchAgent/2.0"})
+            data = resp.json()
+
+        papers = []
+        for p in (data or {}).get("data", []) or []:
+            title = (p or {}).get("title")
+            if not title:
+                continue
+            authors = [a.get("name") for a in (p.get("authors") or [])[:4] if isinstance(a, dict)]
+            tldr = (p.get("tldr") or {}).get("text") if isinstance(p.get("tldr"), dict) else None
+            papers.append({
+                "title": title,
+                "authors": authors,
+                "year": p.get("year"),
+                "abstract": (p.get("abstract") or "")[:400],
+                "tldr": tldr,
+                "url": p.get("url"),
+                "external_ids": p.get("externalIds"),
+            })
+
+        return json.dumps({"papers": papers, "count": len(papers)})
+    except Exception as exc:
+        return json.dumps({"error": str(exc), "papers": []})
+
+
+@tool
+async def search_openalex(query: str) -> str:
+    """OpenAlex works search ."""
+    try:
+        import httpx
+
+        url = "https://api.openalex.org/works"
+        params = {"search": query, "per-page": 8}
+        async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as c:
+            resp = await c.get(url, params=params, headers={"User-Agent": "ResearchAgent/2.0"})
+            data = resp.json()
+
+        works = []
+        for w in (data or {}).get("results", []) or []:
+            title = (w or {}).get("title")
+            if not title:
+                continue
+            works.append({
+                "title": title,
+                "year": w.get("publication_year"),
+                "url": w.get("id"),
+                "doi": (w.get("doi") or ""),
+                "host_venue": (
+                    (w.get("host_venue") or {}).get("display_name")
+                    if isinstance(w.get("host_venue"), dict)
+                    else None
+                ),
+            })
+
+        return json.dumps({"works": works, "count": len(works)})
+    except Exception as exc:
+        return json.dumps({"error": str(exc), "works": []})
+
+
+@tool
+async def search_crossref(query: str) -> str:
+    """Crossref works search """
+    try:
+        import httpx
+
+        url = "https://api.crossref.org/works"
+        params = {"query": query, "rows": 8}
+        async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as c:
+            resp = await c.get(url, params=params, headers={"User-Agent": "ResearchAgent/2.0"})
+            data = resp.json()
+
+        items = []
+        for it in (((data or {}).get("message") or {}).get("items") or [])[:8]:
+            title = (it.get("title") or [""])[0]
+            if not title:
+                continue
+            items.append({
+                "title": title,
+                "year": ((it.get("published-print") or it.get("published-online") or {}).get("date-parts") or [[None]])[0][0],
+                "url": it.get("URL"),
+                "doi": it.get("DOI"),
+                "type": it.get("type"),
+            })
+
+        return json.dumps({"items": items, "count": len(items)})
+    except Exception as exc:
+        return json.dumps({"error": str(exc), "items": []})
+
+
+@tool
+async def search_osti(query: str) -> str:
+    """OSTI.gov records search."""
+    try:
+        import httpx
+
+        url = "https://www.osti.gov/api/v1/records"
+        params = {"q": query, "page": 0, "size": 8}
+        async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as c:
+            resp = await c.get(url, params=params, headers={"User-Agent": "ResearchAgent/2.0"})
+            data = resp.json()
+
+        records = []
+        for r in (data or {}).get("records", []) or []:
+            title = r.get("title")
+            if not title:
+                continue
+            records.append({
+                "title": title,
+                "year": r.get("publication_date", "")[:4] if r.get("publication_date") else None,
+                "url": r.get("product_nsti_url") or r.get("osti_id") or r.get("doi") or r.get("landing_page_url"),
+                "doi": r.get("doi"),
+            })
+
+        return json.dumps({"records": records, "count": len(records)})
+    except Exception as exc:
+        return json.dumps({"error": str(exc), "records": []})
 
 
 @tool

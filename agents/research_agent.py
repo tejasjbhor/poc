@@ -41,10 +41,14 @@ from tools.agent_tools import (
     # search_standards_web,
     # search_technologies_web,
     #
-    # --- Agent-2 style tools (adopted from working notebook) ---
+    # --- Agent-2 ---
     classify_requirement_json,
     search_web_ddg,
     search_arxiv,
+    search_semantic_scholar,
+    search_openalex,
+    search_crossref,
+    search_osti,
     fetch_page_content,
     build_research_record,
 )
@@ -55,6 +59,24 @@ log = structlog.get_logger(__name__)
 cfg = get_settings()
 
 BroadcastFn = Callable[[str, dict], Coroutine]
+
+
+async def _emit_progress(
+    session_id: str,
+    broadcast: BroadcastFn,
+    note: str,
+    step: str = "progress",
+) -> None:
+    await broadcast(
+        session_id,
+        AgentEvent(
+            session_id=session_id,
+            agent=AgentName.RESEARCH,
+            step=step,
+            status=AgentStatus.RUNNING,
+            payload={"note": note},
+        ).to_ws(),
+    )
 
 
 # Progress callback
@@ -220,6 +242,90 @@ Return ONLY valid JSON (no markdown, no preamble) in this exact shape:
   "constraints": ["..."],
   "uncertainties": ["..."]
 }
+"""
+
+SYSTEM_PROMPT_STEP3 = """You are a research agent tasked with finding possible technologies, methods, systems, or approaches
+to achieve a specific system function.
+
+Input:
+- Confirmed system understanding JSON.
+
+Your task:
+1. Generate search queries based on:
+   - Function
+   - Domain
+   - Constraints
+   - Active domains
+2. Return ONLY valid JSON with this exact shape:
+{
+  "queries": ["...", "..."]
+}
+
+Rules:
+- Queries must be specific and target reliable sources.
+- Avoid science-fiction or impossible solutions.
+"""
+
+SYSTEM_PROMPT_STEP3_EXTRACT = """You are a research agent. You are given:
+- Confirmed system understanding JSON
+- Raw search results (web + ArXiv)
+
+Your task:
+1. Extract candidate solutions (technologies, methods, systems, approaches).
+2. Return ONLY a JSON array of candidates with fields:
+[
+  {
+    "name": "Solution name",
+    "description": "Brief description of the solution",
+    "source": "URL or reference",
+    "domain": "...",
+    "function_alignment": "...",
+    "notes": "Additional comments"
+  }
+]
+
+Rules:
+- Do not filter yet; collect plausible candidates.
+- Prefer sources from the provided raw results.
+- If you must add a candidate from general knowledge, still include a best-effort canonical source URL.
+- Never invent a paper id; if you cite ArXiv, it must appear in the raw results.
+"""
+
+SYSTEM_PROMPT_STEP4 = """You are a research agent tasked with evaluating a list of candidate solutions for a system function.
+
+Input:
+- Confirmed system understanding JSON.
+- Candidate solutions JSON array.
+
+Your task:
+1. Evaluate each candidate solution according to:
+   - Does it achieve the intended function? (Gap analysis)
+   - Technology Readiness Level (TRL) if known
+   - Feasibility within domain and constraints
+   - Realism: is it implementable or science-fiction?
+2. Assign a score 0-100 to each candidate based on the criteria above.
+3. Return ONLY a filtered and ranked JSON array, sorted by score, with fields:
+[
+  {
+    "name": "Solution name",
+    "description": "Brief description",
+    "source": "URL or reference (copy from input if present)",
+    "domain": "domain tag if known",
+    "score": 0-100,
+    "TRL": "Low/Medium/High/Unknown",
+    "feasibility": "Low/Medium/High",
+    "realism": "Realistic/Experimental/Science-Fiction",
+    "gap_analysis": "1-2 sentences explaining alignment/gap",
+    "notes": "Short explanation of why this candidate was selected or rejected",
+    "provenance": "retrieved|llm",
+    "verified": true|false|null
+  }
+]
+
+Rules:
+- Keep `source`, `domain`, `provenance`, `verified` from the input candidate if available.
+- Be concise and factual.
+- Do not invent unsupported details.
 """
 
 
@@ -566,17 +672,247 @@ async def run_research_agent(
     records: List[RequirementResearchRecord] = []
 
     # Separate LLM handle for Step 4 ranking (keeps per-requirement agent LLM stable).
-    llm_step4 = ChatAnthropic(
-        model=cfg.anthropic_model,
-        api_key=cfg.anthropic_api_key,
-        max_tokens=2048,
-        temperature=0.2,
+    llm_step4 = None
+    if cfg.anthropic_api_key:
+        llm_step4 = ChatAnthropic(
+            model=cfg.anthropic_model,
+            api_key=cfg.anthropic_api_key,
+            max_tokens=2048,
+            temperature=0.2,
+        )
+    ##_emit_progress, and other chnages to adopt ..
+
+    # dynamic query generation + source searches .
+    # await _emit_progress(session_id, broadcast, "Step 3: Generating queries and searching...", "step3")  # commented: test results on right first
+
+    queries: List[str] = []
+    if cfg.anthropic_api_key and system_understanding:
+        try:
+            prompt_queries = (
+                SYSTEM_PROMPT_STEP3
+                + "\n\nINPUT JSON:\n"
+                + json.dumps(system_understanding, ensure_ascii=False)
+            )
+            q_resp = await ChatAnthropic(
+                model=cfg.anthropic_model,
+                api_key=cfg.anthropic_api_key,
+                max_tokens=1000,
+                temperature=0.2,
+            ).ainvoke([HumanMessage(content=prompt_queries)])
+            q_raw = coerce_json(getattr(q_resp, "content", "") or "")
+            if isinstance(q_raw, dict) and isinstance(q_raw.get("queries"), list):
+                queries = [str(x).strip() for x in q_raw.get("queries", []) if str(x).strip()][:15]
+            elif isinstance(q_raw, list):
+                queries = [str(x).strip() for x in q_raw if str(x).strip()][:15]
+        except Exception:
+            queries = []
+
+    if not queries:
+        basis = (system_understanding.get("domain") if isinstance(system_understanding, dict) else "") or "systems engineering"
+        queries = [
+            f"{basis} standards and regulations",
+            f"{basis} technology implementations",
+            f"{basis} safety requirements",
+            f"{basis} operational constraints",
+            f"{basis} design verification",
+            f"{basis} best practices",
+        ]
+
+    # await _emit_progress(session_id, broadcast, "Step 3a: Generated search queries", "step3a")  # commented: test results on right first
+    # for i, q in enumerate(queries, 1):
+    #     await _emit_progress(session_id, broadcast, f"  {i:02d}. {q}", f"step3a_q{i:02d}")
+
+    totals = {"arxiv": 0, "semantic": 0, "openalex": 0, "crossref": 0, "osti": 0, "web": 0}
+    raw_results: Dict[str, Any] = {
+        "queries": [],
+        "web": [],
+        "arxiv": [],
+        "semantic_scholar": [],
+        "openalex": [],
+        "crossref": [],
+        "osti": [],
+    }
+    technologies: List[TechnologyMatch] = []
+    search_queries_used: List[str] = []
+    for idx, q in enumerate(queries[:6], 1):
+        search_queries_used.append(q)
+        # await _emit_progress(session_id, broadcast, f"Step 3b: Searching ({idx}/{min(len(queries),6)}): {q}", "step3b")  # commented: test results on right first
+
+        try:
+            arxiv = json.loads(await search_arxiv.ainvoke({"query": q}))
+            c = len((arxiv or {}).get("papers", []) or [])
+            totals["arxiv"] += c
+            raw_results["arxiv"].append({"query": q, "results": arxiv})
+            # await _emit_progress(session_id, broadcast, f"  - ArXiv: ok ({c})", "step3b_src")
+            for p in ((arxiv or {}).get("papers", []) or [])[:2]:
+                technologies.append(TechnologyMatch(
+                    name=str(p.get("title", "ArXiv Paper")),
+                    trl=TRL.UNKNOWN,
+                    description=str(p.get("abstract", "")),
+                    source_url=p.get("url"),
+                    limitations="Research source; vendor maturity not guaranteed.",
+                ))
+        except Exception as exc:
+            pass  # await _emit_progress(session_id, broadcast, f"  - ArXiv: error ({exc})", "step3b_src")
+
+        try:
+            sem = json.loads(await search_semantic_scholar.ainvoke({"query": q}))
+            c = len((sem or {}).get("papers", []) or [])
+            totals["semantic"] += c
+            raw_results["semantic_scholar"].append({"query": q, "results": sem})
+            # await _emit_progress(session_id, broadcast, f"  - Semantic Scholar: ok ({c})", "step3b_src")
+        except Exception as exc:
+            pass  # await _emit_progress(session_id, broadcast, f"  - Semantic Scholar: error ({exc})", "step3b_src")
+
+        try:
+            oa = json.loads(await search_openalex.ainvoke({"query": q}))
+            c = len((oa or {}).get("works", []) or [])
+            totals["openalex"] += c
+            raw_results["openalex"].append({"query": q, "results": oa})
+            # await _emit_progress(session_id, broadcast, f"  - OpenAlex: ok ({c})", "step3b_src")
+        except Exception as exc:
+            pass  # await _emit_progress(session_id, broadcast, f"  - OpenAlex: error ({exc})", "step3b_src")
+
+        try:
+            cr = json.loads(await search_crossref.ainvoke({"query": q}))
+            c = len((cr or {}).get("items", []) or [])
+            totals["crossref"] += c
+            raw_results["crossref"].append({"query": q, "results": cr})
+            # await _emit_progress(session_id, broadcast, f"  - Crossref: ok ({c})", "step3b_src")
+        except Exception as exc:
+            pass  # await _emit_progress(session_id, broadcast, f"  - Crossref: error ({exc})", "step3b_src")
+
+        try:
+            osti = json.loads(await search_osti.ainvoke({"query": q}))
+            c = len((osti or {}).get("records", []) or [])
+            totals["osti"] += c
+            raw_results["osti"].append({"query": q, "results": osti})
+            # await _emit_progress(session_id, broadcast, f"  - OSTI: ok ({c})", "step3b_src")
+        except Exception as exc:
+            pass  # await _emit_progress(session_id, broadcast, f"  - OSTI: error ({exc})", "step3b_src")
+
+        try:
+            web = json.loads(await search_web_ddg.ainvoke({"query": q}))
+            c = len((web or {}).get("results", []) or [])
+            totals["web"] += c
+            raw_results["web"].append({"query": q, "results": web})
+            # await _emit_progress(session_id, broadcast, f"  - Web (DDG): ok ({c})", "step3b_src")
+        except Exception as exc:
+            pass  # await _emit_progress(session_id, broadcast, f"  - Web (DDG): error ({exc})", "step3b_src")
+
+    # await _emit_progress(session_id, broadcast, "Step 3b: Retrieved items (totals)", "step3b_totals")
+    # await _emit_progress(session_id, broadcast, f"  - ArXiv papers          : {totals['arxiv']}", "step3b_totals")
+    # await _emit_progress(session_id, broadcast, f"  - Semantic Scholar papers: {totals['semantic']}", "step3b_totals")
+    # await _emit_progress(session_id, broadcast, f"  - OpenAlex works        : {totals['openalex']}", "step3b_totals")
+    # await _emit_progress(session_id, broadcast, f"  - Crossref items        : {totals['crossref']}", "step3b_totals")
+    # await _emit_progress(session_id, broadcast, f"  - OSTI records          : {totals['osti']}", "step3b_totals")
+    # await _emit_progress(session_id, broadcast, f"  - Web results (DDG)     : {totals['web']}", "step3b_totals")
+    raw_results["queries"] = search_queries_used
+    candidates: List[Dict[str, Any]] = []
+    if cfg.anthropic_api_key and system_understanding:
+        try:
+            extract_prompt = (
+                SYSTEM_PROMPT_STEP3_EXTRACT
+                + "\n\nCONFIRMED SYSTEM UNDERSTANDING JSON:\n"
+                + json.dumps(system_understanding, ensure_ascii=False)
+                + "\n\nRAW SEARCH RESULTS JSON:\n"
+                + json.dumps(raw_results, ensure_ascii=False)[:30000]
+            )
+            e_resp = await ChatAnthropic(
+                model=cfg.anthropic_model,
+                api_key=cfg.anthropic_api_key,
+                max_tokens=2200,
+                temperature=0.2,
+            ).ainvoke([HumanMessage(content=extract_prompt)])
+            e_raw = coerce_json(getattr(e_resp, "content", "") or "")
+            if isinstance(e_raw, list):
+                candidates = [c for c in e_raw if isinstance(c, dict)]
+        except Exception:
+            candidates = []
+
+    if not candidates:
+        for t in technologies[:16]:
+            candidates.append({
+                "name": t.name,
+                "description": t.description,
+                "source": t.source_url,
+                "domain": system_understanding.get("domain", "") if isinstance(system_understanding, dict) else "",
+                "function_alignment": t.description[:180],
+                "notes": t.limitations or "",
+                "provenance": "retrieved",
+                "verified": None,
+            })
+
+    # await _emit_progress(session_id, broadcast, "Step 3c: Candidates built", "step3c")
+    # await _emit_progress(session_id, broadcast, "Step 4: Enriching candidates (no ranking)...", "step4")
+
+    ranked_candidates = candidates
+    if cfg.anthropic_api_key and candidates and system_understanding:
+        try:
+            rank_prompt = (
+                SYSTEM_PROMPT_STEP4
+                + "\n\nCONFIRMED SYSTEM UNDERSTANDING JSON:\n"
+                + json.dumps(system_understanding, ensure_ascii=False)
+                + "\n\nCANDIDATE SOLUTIONS JSON:\n"
+                + json.dumps(candidates, ensure_ascii=False)
+            )
+            r_resp = await ChatAnthropic(
+                model=cfg.anthropic_model,
+                api_key=cfg.anthropic_api_key,
+                max_tokens=2600,
+                temperature=0.2,
+            ).ainvoke([HumanMessage(content=rank_prompt)])
+            r_raw = coerce_json(getattr(r_resp, "content", "") or "")
+            if isinstance(r_raw, list):
+                ranked_candidates = [c for c in r_raw if isinstance(c, dict)]
+        except Exception:
+            ranked_candidates = candidates
+
+    rec = RequirementResearchRecord(
+        req_id="REQ-001",
+        req_statement=str(system_understanding.get("function", "System function")),
+        requirement_type="functional",
+        function_name=str(system_understanding.get("function", "")) or None,
+        rationale=str(system_understanding.get("domain", "")) or None,
+        criticality="medium",
+        domain_tag=str(system_understanding.get("domain", "")) or None,
+        standards=[],
+        technologies=[],
+        gap_severity=GapSeverity.NO_MATCH if not technologies else GapSeverity.PARTIAL,
+        gap_description="Automated dynamic search completed; standards linkage still needs deeper validation.",
+        recommendation="Review top candidates and align with project-specific standards clauses.",
+        search_queries_used=search_queries_used,
     )
+    for c in ranked_candidates[:16]:
+        trl_text = str(c.get("TRL") or c.get("trl") or "Unknown").lower()
+        if "high" in trl_text:
+            trl = TRL.TRL8
+        elif "medium" in trl_text:
+            trl = TRL.TRL5
+        elif "low" in trl_text:
+            trl = TRL.TRL2
+        else:
+            trl = TRL.UNKNOWN
+        rec.technologies.append(
+            TechnologyMatch(
+                name=str(c.get("name") or "Candidate"),
+                trl=trl,
+                description=str(c.get("description") or c.get("function_alignment") or ""),
+                source_url=c.get("source"),
+                limitations=str(c.get("gap_analysis") or c.get("notes") or ""),
+            )
+        )
+    if rec.technologies:
+        rec.top_technology = rec.technologies[0].name
+        rec.top_tech_trl = rec.technologies[0].trl.value
+        rec.all_source_urls = [t.source_url for t in rec.technologies if t.source_url]
+    records.append(rec)
 
     # ── Assemble final result ─────────────────────────────────────────────
     result = ResearchResult(
         session_id=session_id,
         records=records,
+        enriched_candidates=ranked_candidates,
     )
     result.build_summary_table()
     result.build_executive_summary()
@@ -592,6 +928,25 @@ async def run_research_agent(
             "gaps": result.executive_summary.gaps if result.executive_summary else 0,
             "no_match": result.executive_summary.no_match if result.executive_summary else 0,
             "technologies_found": result.executive_summary.technologies_found if result.executive_summary else 0,
+            "enriched_candidates": ranked_candidates,
+        },
+    ).to_ws())
+
+    # Display  candidates 
+    await broadcast(session_id, AgentEvent(
+        session_id=session_id,
+        agent=AgentName.RESEARCH,
+        step="request_user_input",
+        status=AgentStatus.WAITING_FOR_USER_INPUT,
+        payload={
+            "type": "user_input_request",
+            "input_type": "validation",
+            "label": "Research Results — Enriched Candidates",
+            "instructions": "Review the technology candidates and approve to dismiss.",
+            "data": {"enriched_candidates": ranked_candidates},
+            "ui_hint": {
+                "approve_label": "Approve",
+            },
         },
     ).to_ws())
 

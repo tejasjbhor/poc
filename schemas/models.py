@@ -301,6 +301,8 @@ class ResearchResult(BaseModel):
     summary_table: List[SummaryTableRow] = Field(default_factory=list)
     executive_summary: Optional[ExecutiveSummary] = None
     generated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    # Notebook-style enriched candidates (Step 4 output) for Data View right panel
+    enriched_candidates: List[Dict[str, Any]] = Field(default_factory=list)
 
     def build_summary_table(self) -> None:
         rows = []
