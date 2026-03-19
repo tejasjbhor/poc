@@ -12,6 +12,8 @@ from langchain_core.callbacks import AsyncCallbackHandler
 from langchain_core.messages import HumanMessage
 import structlog
 
+from utils.user_interaction import request_user_input
+
 # LangChain "agent" stack may fail to import in some environments if
 # langgraph versions are incompatible. We guard those imports so the
 # module can still be imported for mock/non-LLM flows.
@@ -503,52 +505,30 @@ async def run_research_agent(
     # 🔁 LOOP until user approves
     while not confirmed_step2:
 
+        # 2. Wait for user input
         input_data = None
-        # 1. Ask user for validation OR edit
-        await broadcast(session_id, AgentEvent(
+        
+        input_data = await request_user_input(
             session_id=session_id,
             agent=AgentName.RESEARCH,
+            user_input_queue=user_input_queue,
+            broadcast=broadcast,
             step="request_user_input",
-            status=AgentStatus.RUNNING,
-            payload={
-                "type": "user_input_request",
-                "input_type": "validation",
-                "label": "Validate generated data",
-                "sub_status": "Waiting For User Input",
-                "instructions": "Review, edit if needed, then approve.",
-                "data": system_understanding,
-                "ui_hint": {
-                    "render_as": "validation",
-                    "actions": ["approve", "edit"],
-                    "primary_action": "approve",
-                    "approve_label": "Approve and continue",
-                    "edit_label": "Modify and resubmit",
-                    "editable": True
-                }
-            }
-        ).to_ws())
+            data=system_understanding,
+            label="Validate generated data",
+            instructions="Review, edit if needed, then approve.",
+            ui_hint={
+                "render_as": "validation",
+                "actions": ["approve", "edit"],
+                "primary_action": "approve",
+                "approve_label": "Approve and continue",
+                "edit_label": "Modify and resubmit",
+                "editable": True
+            },
+            timeout=timeout
+        )
 
-        # 2. Wait for user input
-        elapsed = 0.0
-        input_data = None
-
-        try:
-            input_data = await asyncio.wait_for(
-                user_input_queue.get(),
-                timeout=timeout
-            )
-        except asyncio.TimeoutError:
-            input_data = None
-
-        # 3. Handle timeout
         if input_data is None:
-            await broadcast(session_id, AgentEvent(
-                session_id=session_id,
-                agent=AgentName.RESEARCH,
-                step="step2_timeout",
-                status=AgentStatus.FAILED,
-                payload={"note": "Timed out waiting for user input. Proceeding best-effort."},
-            ).to_ws())
             break
 
         action = input_data.get("action")
@@ -619,17 +599,6 @@ async def run_research_agent(
 
     records: List[RequirementResearchRecord] = []
 
-    # Separate LLM handle for Step 4 ranking (keeps per-requirement agent LLM stable).
-    llm_step4 = None
-    if cfg.anthropic_api_key:
-        llm_step4 = ChatAnthropic(
-            model=cfg.anthropic_model,
-            api_key=cfg.anthropic_api_key,
-            max_tokens=2048,
-            temperature=0.2,
-        )
-    ##_emit_progress, and other chnages to adopt ..
-
     # dynamic query generation + source searches .
     # await _emit_progress(session_id, broadcast, "Step 3: Generating queries and searching...", "step3")  # commented: test results on right first
 
@@ -675,12 +644,36 @@ async def run_research_agent(
             f"{basis} best practices",
         ]
 
+    input_data = await request_user_input(
+        session_id=session_id,
+        agent=AgentName.RESEARCH,
+        user_input_queue=user_input_queue,
+        broadcast=broadcast,
+        step="request_user_input",
+        data=queries,
+        label="Validate search queries",
+        instructions="Review then approve.",
+        ui_hint={
+            "render_as": "validation",
+            "actions": ["approve"],
+            "primary_action": "approve",
+            "approve_label": "Approve and continue",
+            "editable": False
+        },
+        timeout=timeout
+    )
+
+    if input_data is None:
+        pass
+
+    action = input_data.get("action")
+
     await broadcast(session_id, AgentEvent(
         session_id=session_id,
         agent=AgentName.RESEARCH,
         step="search_queries_ready",
         status=AgentStatus.RUNNING,
-        payload={"note": "Search queries ready. Exectuing internet search",
+        payload={"note": "Search queries ready. Executing internet search",
                  "sub_status": "Waiting For Internet Search",},
     ).to_ws())
 
@@ -853,25 +846,38 @@ async def run_research_agent(
         except Exception:
             ranked_candidates = candidates
 
-    # Display  candidates 
+    input_data = await request_user_input(
+        session_id=session_id,
+        agent=AgentName.RESEARCH,
+        user_input_queue=user_input_queue,
+        broadcast=broadcast,
+        step="request_user_input",
+        data=ranked_candidates,
+        label="Research Results — Enriched Candidates",
+        instructions="Review then approve.",
+        ui_hint={
+            "render_as": "validation",
+            "actions": ["approve"],
+            "primary_action": "approve",
+            "approve_label": "Approve and continue",
+            "editable": False
+        },
+        timeout=timeout
+    )
+
+    if input_data is None:
+        pass
+
+    action = input_data.get("action")
+    
+    # Step 3: finished
     await broadcast(session_id, AgentEvent(
         session_id=session_id,
         agent=AgentName.RESEARCH,
-        step="request_user_input",
-        status=AgentStatus.RUNNING,
-        payload={
-            "type": "user_input_request",
-            "sub_status": "Waiting For User Input",
-            "input_type": "validation",
-            "label": "Research Results — Enriched Candidates",
-            "instructions": "Review the technology candidates and approve to dismiss.",
-            "data": {"enriched_candidates": ranked_candidates},
-            "ui_hint": {
-                "approve_label": "Approve",
-            },
-        },
+        step="finished",
+        status=AgentStatus.COMPLETED,
+        payload={"note": "Research Agent Finished."}
     ).to_ws())
-
-    log.info("research_agent.completed", session_id=session_id,
-             records=len(records))
+    
+    
     return ranked_candidates

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import uuid
 from contextlib import asynccontextmanager
@@ -324,6 +325,24 @@ async def get_model(session_id: str):
         )
     iso = state.iso_model
     return iso if isinstance(iso, dict) else iso.model_dump()
+
+
+@app.get(
+    "/api/v1/sessions/{session_id}/research-results",
+    tags=["sessions"],
+    summary="Get Research Agent ranked candidates for a session",
+)
+async def get_research_results(session_id: str):
+    state = await session_store.get(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Session not found.")
+
+    state = await session_store.get(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    if not state.research_result:
+        raise HTTPException(status_code=202, detail="Research results not yet available.")
+    return state.research_result
 
 @app.post("/api/v1/sessions/{session_id}/input")
 async def upload_input(session_id: str, request: Request, file: UploadFile = None):

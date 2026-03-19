@@ -11,7 +11,7 @@ import asyncio
 from state.session_store import session_file_queues
 from agents.operational_agent import run_operational_agent
 from agents.research_agent import run_research_agent
-from schemas.models import AgentEvent, AgentName, AgentStatus, SessionState
+from schemas.models import AgentEvent, AgentName, AgentStatus, ResearchResult, SessionState
 
 
 
@@ -34,7 +34,8 @@ async def run_pipeline(
     Returns the final SessionState regardless of success/failure.
     Never raises — all errors are caught, persisted, and broadcast.
     """
-
+    state = await store.get(session_id)  # safe even if None
+    
     def _ev(step: str, status: AgentStatus, payload=None, error=None, agent: AgentName = AgentName.SUPER,):
         return AgentEvent(
             session_id=session_id, agent=agent,
@@ -90,37 +91,20 @@ async def run_pipeline(
     ))
 
     try:
-        research_result = await run_research_agent(
+        ranked_candidates = await run_research_agent(
             iso_model=iso_model,
             session_id=session_id,
             user_input_queue=session_file_queues[session_id],
             broadcast=broadcast,
         )
+        research_result = {
+            "session_id": session_id,
+            "records": ranked_candidates,  # list of dicts
+        }
+        log.info("ranked_candidates", ranked_candidates=ranked_candidates)
         await store.set_research_result(session_id, research_result)
-        ex = research_result.executive_summary
-
-        await broadcast(session_id, _ev(
-            step="pipeline_completed", status=AgentStatus.COMPLETED,
-            payload={
-                "requirements_researched": len(research_result.records),
-                "covered": ex.covered if ex else 0,
-                "partial": ex.partial if ex else 0,
-                "gaps": ex.gaps if ex else 0,
-                "technologies_found": ex.technologies_found if ex else 0,
-                "standards_cited": ex.standards_cited if ex else 0,
-            },
-        ))
-        
-        # ✅ SUCCESS here
-        await broadcast(session_id, _ev(
-            agent=AgentName.RESEARCH,
-            step="research_agent_completed",
-            status=AgentStatus.COMPLETED,
-            payload={"note": "Research Agent Completed"},
-        ))
 
     except Exception as exc:
-        state = await store.get(session_id)  # safe even if None
         # ❌ FAILURE here FIRST
         await broadcast(session_id, _ev(
             agent=AgentName.RESEARCH,
@@ -132,17 +116,13 @@ async def run_pipeline(
         
         log.error("pipeline.research_failed",
                   session_id=session_id, exc=str(exc))
+    
         #  ISO model saved
         state = await store.get(session_id)
         state.error = f"Research agent failed: {exc}"
-        await store.save(state)
-        await store.mark_completed(session_id)
-        await broadcast(session_id, _ev(
-            step="pipeline_completed_research_partial",
-            status=AgentStatus.COMPLETED,
-            payload={"note": "Pipeline Completed : Research Partial"},
-            error=str(exc),
-        ))
+    
+    await store.save(state)
+    await store.mark_completed(session_id)
         
     await broadcast(session_id, _ev(
         agent=AgentName.SUPER,

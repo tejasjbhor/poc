@@ -296,7 +296,7 @@ class SummaryTableRow(BaseModel):
 class ResearchResult(BaseModel):
     """Root object returned by /api/v1/sessions/{id}/research"""
     session_id: str
-    records: List[RequirementResearchRecord] = Field(default_factory=list)
+    records: List[dict] = Field(default_factory=list)
     summary_table: List[SummaryTableRow] = Field(default_factory=list)
     executive_summary: Optional[ExecutiveSummary] = None
     generated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -427,7 +427,7 @@ class SessionState(BaseModel):
     filename: Optional[str] = None
     domain_context: Optional[str] = None
     iso_model: Optional[dict] = None
-    research_result: Optional[ResearchResult] = None
+    research_result: Optional[dict] = None
     events: List[AgentEvent] = Field(default_factory=list)
     error: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
