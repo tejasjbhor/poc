@@ -87,7 +87,8 @@ class AgentStatus(str, Enum):
 
 
 class AgentName(str, Enum):
-    SUPER       = "super"
+    SUPER_F1       = "super_f1"
+    SUPER_F2       = "super_f2"
     OPERATIONAL = "operational"
     RESEARCH    = "research"
 

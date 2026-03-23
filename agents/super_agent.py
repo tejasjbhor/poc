@@ -18,6 +18,7 @@ from schemas.models import AgentEvent, AgentName, AgentStatus, ResearchResult, S
 ## Need to add dynalic state change , funtion call ..may be no need ( dicuss with ali)
 
 from state.session_store import SessionStore
+from utils.user_interaction import request_user_input
 
 log = structlog.get_logger(__name__)
 
@@ -35,8 +36,9 @@ async def run_pipeline(
     Never raises — all errors are caught, persisted, and broadcast.
     """
     state = await store.get(session_id)  # safe even if None
+    timeout = 300.0
     
-    def _ev(step: str, status: AgentStatus, payload=None, error=None, agent: AgentName = AgentName.SUPER,):
+    def _ev(step: str, status: AgentStatus, payload=None, error=None, agent: AgentName = AgentName.SUPER_F1,):
         return AgentEvent(
             session_id=session_id, agent=agent,
             step=step, status=status, payload=payload, error=error,
@@ -44,7 +46,7 @@ async def run_pipeline(
 
     # Step 1: signal start
     await broadcast(session_id, _ev(
-        agent=AgentName.SUPER,
+        agent=AgentName.SUPER_F1,
         step="super_agent_started",
         status=AgentStatus.RUNNING,
         payload={
@@ -121,11 +123,30 @@ async def run_pipeline(
         state = await store.get(session_id)
         state.error = f"Research agent failed: {exc}"
     
-    await store.save(state)
+    input_data = await request_user_input(
+        session_id=session_id,
+        agent=AgentName.SUPER_F1,
+        user_input_queue=session_file_queues[session_id],
+        broadcast=broadcast,
+        step="request_user_input",
+        data=ranked_candidates,
+        label="End Session",
+        instructions="End Session.",
+        ui_hint={
+            "render_as": "validation",
+            "actions": ["approve"],
+            "primary_action": "approve",
+            "approve_label": "End Session",
+            "editable": False
+        },
+        timeout=timeout
+    )
+    
+    # await store.save(state)
     await store.mark_completed(session_id)
         
     await broadcast(session_id, _ev(
-        agent=AgentName.SUPER,
+        agent=AgentName.SUPER_F1,
         step="session_completed",
         status=AgentStatus.COMPLETED,
         payload={"note": "Session Completed"},
