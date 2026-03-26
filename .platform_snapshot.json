@@ -1,0 +1,47 @@
+{
+  "updated_at": "2026-03-25T17:17:31",
+  "session_id": "15aed4a0-ee26-484c-a006-60ad76ea5f67",
+  "next_agent": "agent_1",
+  "session_goal": "Design requirements for a new uranium waste storage facility",
+  "goal_progress": "Stalled - user diverted to unrelated topic after waste type clarification request",
+  "inferred_domain": "nuclear waste management",
+  "inferred_task": "requirements analysis for facility design",
+  "phase": "scope clarification",
+  "thoughts": [
+    "User completely switched from uranium waste facility to dancing/pizza question",
+    "Agent appropriately flagged the topic change and offered to refocus",
+    "Critical waste classification question remains unanswered",
+    "Session needs user confirmation to proceed with original goal"
+  ],
+  "checklist": [
+    {
+      "label": "waste type classification",
+      "status": "missing"
+    },
+    {
+      "label": "activity level specifications",
+      "status": "missing"
+    },
+    {
+      "label": "facility scope definition",
+      "status": "partial"
+    },
+    {
+      "label": "safety requirements framework",
+      "status": "missing"
+    },
+    {
+      "label": "regulatory compliance standards",
+      "status": "missing"
+    }
+  ],
+  "card": {
+    "title": "Session Direction Needed",
+    "body": "You were working on uranium waste storage facility requirements but switched to an unrelated topic. Would you like to continue with the facility design or end this session?",
+    "recommended_action": "Choose to continue with waste facility requirements or start a new session",
+    "suggestion_id": "dd18e8d7-23e3-4fe6-8fd6-45dbf2f7ba22"
+  },
+  "buffer_pending": [],
+  "context_for_agents": {},
+  "sa_feedback": null
+}
