@@ -1,6 +1,8 @@
 from langgraph.graph import StateGraph, START, END
 
+from helpers.log_node import log_node
 from nodes.collect_process_list_node import collect_process_list_node
+from nodes.dispatch_user_input_node import dispatch_user_input_node
 from nodes.finalize_node import finalize_node
 from nodes.ask_overall_surface_and_function_node import ask_overall_node
 from nodes.collect_layout_constraints import collect_constraints_node
@@ -19,18 +21,19 @@ def build_graph(llm):
     builder = StateGraph(FacilityState)
 
     # Nodes
-    builder.add_node("normalize", lambda s: normalize_user_input_node(s, llm))
-    builder.add_node("router", lambda s: router_node(s, llm))
+    builder.add_node("normalize", log_node("normalize", lambda s: normalize_user_input_node(s, llm)))
+    builder.add_node("router", log_node("router", lambda s: router_node(s, llm)))
+    builder.add_node("dispatch_input", log_node("dispatch_input", lambda s: dispatch_user_input_node(s)))
 
-    builder.add_node("ASK_OVERALL_SURFACE_AND_FUNCTION", lambda s: ask_overall_node(s, llm))
-    builder.add_node("COLLECT_PROCESS_LIST", lambda s: collect_process_list_node(s, llm))
-    builder.add_node("VALIDATE_PROCESS_LIST", lambda s: validate_process_list_node(s, llm))
-    builder.add_node("COLLECT_LAYOUT_CONSTRAINTS", lambda s: collect_constraints_node(s, llm))
-    builder.add_node("PREPARE_LAYOUT_SUMMARY", lambda s: prepare_summary_node(s, llm))
-    builder.add_node("GENERATE_LAYOUT", lambda s: generate_layout_node(s, llm))
-    builder.add_node("REQUEST_LAYOUT_FEEDBACK", lambda s: request_feedback_node(s, llm))
-    builder.add_node("REFINE_LAYOUT", lambda s: refine_layout_node(s, llm))
-    builder.add_node("FINALIZE_APPROVED_LAYOUT", lambda s: finalize_node(s, llm))
+    builder.add_node("ASK_OVERALL_SURFACE_AND_FUNCTION", log_node("ASK_OVERALL_SURFACE_AND_FUNCTION", lambda s: ask_overall_node(s, llm)))
+    builder.add_node("COLLECT_PROCESS_LIST", log_node("COLLECT_PROCESS_LIST", lambda s: collect_process_list_node(s, llm)))
+    builder.add_node("VALIDATE_PROCESS_LIST", log_node("VALIDATE_PROCESS_LIST", lambda s: validate_process_list_node(s, llm)))
+    builder.add_node("COLLECT_LAYOUT_CONSTRAINTS", log_node("COLLECT_LAYOUT_CONSTRAINTS", lambda s: collect_constraints_node(s, llm)))
+    builder.add_node("PREPARE_LAYOUT_SUMMARY", log_node("PREPARE_LAYOUT_SUMMARY", lambda s: prepare_summary_node(s, llm)))
+    builder.add_node("GENERATE_LAYOUT", log_node("GENERATE_LAYOUT", lambda s: generate_layout_node(s, llm)))
+    builder.add_node("REQUEST_LAYOUT_FEEDBACK", log_node("REQUEST_LAYOUT_FEEDBACK", lambda s: request_feedback_node(s, llm)))
+    builder.add_node("REFINE_LAYOUT", log_node("REFINE_LAYOUT", lambda s: refine_layout_node(s, llm)))
+    builder.add_node("FINALIZE_APPROVED_LAYOUT", log_node("FINALIZE_APPROVED_LAYOUT", lambda s: finalize_node(s, llm)))
 
     # Flow
     builder.add_edge(START, "router")

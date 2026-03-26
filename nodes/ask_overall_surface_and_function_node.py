@@ -7,7 +7,7 @@ from state.facility_layout_graph import FacilityState
 
 def ask_overall_node(state: FacilityState, llm):
     prompt = FACILITY_LAYOUT_PROMPTS["prompt_ask_overall_surface_and_function"]
-    
+
     response = safe_llm_invoke(llm, [HumanMessage(content=prompt)])
 
     user_input = interrupt(response.content)

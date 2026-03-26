@@ -1,3 +1,6 @@
+import json
+
+
 class ConnectionManager:
     def __init__(self):
         self.connections = {}  # session_id -> websocket
@@ -12,8 +15,22 @@ class ConnectionManager:
 
     async def send(self, session_id: str, data):
         ws = self.connections.get(session_id)
-        if ws:
+
+        if not ws:
+            print("NO WS FOUND")
+            return
+        try:
             await ws.send_json(data)
+        except Exception as e:
+            print("SEND FAILED:", e)
+            self.disconnect(session_id)
+            
+    async def broadcast_json(self, data: dict):
+        """Main helper you will use from LLM / LangGraph"""
+
+        message = json.dumps(data, ensure_ascii=False)
+
+        await self.broadcast(message)
 
 
-manager = ConnectionManager()
+ws_manager_graph = ConnectionManager()
