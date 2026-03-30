@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 
 from state.sa_state import get_state
-from utils.cmd_input_output import apply_feedback, send_message
+from utils.cmd_input_output import deliver_user_line, pending_interrupt
 print("RUNNING FROM:", sys.executable)
 import argparse
 import asyncio
@@ -15,6 +15,8 @@ import uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+from prompts.sa_prompts import SA_CARD_INTERRUPT_KIND
 
 _ROOT = Path(__file__).resolve().parent
 _SNAPSHOT = _ROOT / ".platform_snapshot.json"
@@ -100,11 +102,21 @@ async def chat_async() -> None:
     st = await get_state(graph, session_id)
     _write_sa_snapshot(session_id, st)
 
-    loop = asyncio.get_event_loop()
-
     while True:
+        # After a card, the graph is paused until the user types proceed / decline / skip.
+        # Before that we used to ask for the card in a second input() after the run; now we check first.
+        pending = await pending_interrupt(graph, session_id)
+        if isinstance(pending, dict) and pending.get("kind") == SA_CARD_INTERRUPT_KIND:
+            print()
+            print("SA card (respond below)")
+            print(pending.get("title", ""))
+            print(pending.get("body", ""))
+            prompt = "Card: proceed / decline / Enter skip> "
+        else:
+            prompt = "You> "
+
         try:
-            line = await loop.run_in_executor(None, lambda: input("You> ").strip())
+            line = input(prompt).strip()
         except (EOFError, KeyboardInterrupt):
             print("\nBye.")
             break
@@ -124,7 +136,8 @@ async def chat_async() -> None:
                     "/help /new /quit\n"
                     "  /new — new session\n"
                     "  agent_1 replies; SA runs after each turn — see watch for goals, checklist, next_agent.\n"
-                    "  If SA shows a card after your message, you’ll be asked proceed/decline.\n"
+                    
+                    "  If you see a card prompt, type proceed, decline, or press Enter to skip.\n"
                 )
                 continue
             if cmd == "/new":
@@ -140,7 +153,7 @@ async def chat_async() -> None:
             print("Unknown command. /help")
             continue
 
-        await send_message(graph, session_id, line)
+        await deliver_user_line(graph, session_id, line)
         final_state = await get_state(graph, session_id)
 
         reply = _extract_agent_reply(final_state)
@@ -150,24 +163,6 @@ async def chat_async() -> None:
         print(reply)
         print()
         _write_sa_snapshot(session_id, final_state)
-
-        card = final_state.get("sa_card")
-        if card:
-            print("SA card")
-            print(card.get("title", ""))
-            print(card.get("body", ""))
-            ans = await loop.run_in_executor(
-                None,
-                lambda: input("Card: type proceed / decline / Enter skip: ").strip().lower(),
-            )
-            if ans in ("proceed", "p"):
-                await apply_feedback(graph, session_id, "proceed", card.get("suggestion_id"))
-                final_state = await get_state(graph, session_id)
-                _write_sa_snapshot(session_id, final_state)
-            elif ans in ("decline", "d"):
-                await apply_feedback(graph, session_id, "decline", card.get("suggestion_id"))
-                final_state = await get_state(graph, session_id)
-                _write_sa_snapshot(session_id, final_state)
 
 
 async def watch_async(interval: float) -> None:

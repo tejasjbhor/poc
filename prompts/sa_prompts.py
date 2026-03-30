@@ -90,3 +90,6 @@ Rules:
 - show_card: true only when the human must confirm or decide.
 - Never invent domains not seen in events.
 """
+
+# Label we attach when the graph is waiting on a Super Agent card ...
+SA_CARD_INTERRUPT_KIND = "sa_card"

@@ -73,11 +73,26 @@ class MessageOut(BaseModel):
     user: str
     assistant: str
     sa_state: dict
+    # True when the graph is waiting for a card answer; client should send that answer as the next message text.
+    pending_interrupt: bool = False
+    interrupt_payload: dict | None = None
 
 #class4
 class CardFeedback(BaseModel):
     action: str
     suggestion_id: str | None = None
+
+
+async def _interrupt_api_fields(graph: Any, session_id: str) -> tuple[bool, dict | None]:
+    # Same idea as the CLI: know if we are sitting on a card before the next POST.
+    snap = await graph.aget_state({"configurable": {"thread_id": session_id}})
+    pending_val = tuple(getattr(snap, "interrupts", ()) or ())
+    if not pending_val:
+        return False, None
+    v = pending_val[0].value
+    if isinstance(v, dict):
+        return True, v
+    return True, {"value": v}
 
 
 def _extract_sa_state(raw_state: dict) -> dict:
@@ -160,20 +175,24 @@ async def post_message(session_id: str, body: MessageIn):
 
     assistant_reply = _extract_agent_reply(final_state)
     sa_state = _extract_sa_state(final_state)
+    pending_interrupt, interrupt_payload = await _interrupt_api_fields(graph, session_id)
 
     logger.info(
-        "Session %s: reply=%d chars  domain='%s'  card=%s  buffer_pending=%d",
+        "Session %s: reply=%d chars  domain='%s'  card=%s  buffer_pending=%d  interrupt=%s",
         session_id,
         len(assistant_reply),
         sa_state.get("inferred_domain", "?"),
         sa_state.get("card") is not None,
         len(sa_state.get("buffer_pending") or []),
+        pending_interrupt,
     )
 
     return MessageOut(
         user=text,
         assistant=assistant_reply,
         sa_state=sa_state,
+        pending_interrupt=pending_interrupt,
+        interrupt_payload=interrupt_payload,
     )
 
 
@@ -198,7 +217,7 @@ def root():
     return {
         "service": "super-agent-platform",
         "version": "3.0.0",
-        "note": "run_chat.cmd + run_watch.cmd for CLI.", #we didnt have redis or wesocket yet
+        "note": "If pending_interrupt is true, POST /message again with proceed, decline, or skip as the text (or use /sa/feedback).",
         "docs": "/docs",
         "endpoints": {
             "create_session": "POST /api/sessions",
