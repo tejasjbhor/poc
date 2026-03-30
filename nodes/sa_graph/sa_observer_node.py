@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import json
-import logging
+import structlog
+
 import re
 import uuid
 
@@ -15,7 +16,7 @@ from llm_config import ainvoke_with_retry, get_chat_model
 from prompts.sa_prompts import SA_SYSTEM
 from state.sa_state import BufferItem, PlatformState
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 def _build_sa_input(state: PlatformState) -> dict:

@@ -10,6 +10,13 @@ AGENTS: dict[str, dict] = {
         "runs_at_start": True,
         "description": "Structured requirements",
     },
+    "agent_2": {
+        "display_name": "agent_2",
+        "node_fn": "agent_2.agent_2_node",
+        "default_phase": "phase_2_needs",
+        "runs_at_start": True,
+        "description": "Structured requirements",
+    },
 }
 
 

@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import sys
+
+from state.sa_state import get_state
+from utils.cmd_input_output import apply_feedback, send_message
 print("RUNNING FROM:", sys.executable)
 import argparse
 import asyncio
@@ -22,7 +25,7 @@ for _env_path in [_ROOT.parent / ".env", _ROOT / ".env"]:
         load_dotenv(_env_path)
         break
 
-from graph import apply_feedback, build_graph, get_state, send_message
+from graphs.sa_graph import build_graph
 
 
 def _load_session_id() -> str | None:
