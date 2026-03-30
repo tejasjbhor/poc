@@ -40,7 +40,6 @@ Response discipline:
 - For internal synthesis/generation steps, be strict, explicit, and schema-oriented.
 - Never claim the layout is final unless the user explicitly approves it.
 """.strip(),
-
     "prompt_ask_overall_surface_and_function": """
 You are at the start of the facility layout workflow.
 
@@ -66,7 +65,6 @@ Example content:
 - Total surface area: 4,000 m²
 - System function: battery pack assembly and testing facility
 """.strip(),
-
     "prompt_collect_process_list": """
 You are collecting the internal functional breakdown of the facility.
 
@@ -101,7 +99,6 @@ Suggested answer template to show the user:
   }
 ]
 """.strip(),
-
     "prompt_validate_process_list": """
 You are validating the user-provided list of facility functions/processes.
 
@@ -135,7 +132,6 @@ Rules:
 - Do not rewrite the full user input.
 - Keep the clarification request structured and concise.
 """.strip(),
-
     "prompt_collect_layout_constraints": """
 You are collecting layout and placement constraints before generating the facility layout.
 
@@ -167,7 +163,6 @@ Suggested structure:
 - Soft preferences
 - 2 to 4 simple examples
 """.strip(),
-
     "prompt_prepare_layout_summary": """
 You are preparing a normalized planning summary before layout generation.
 
@@ -226,7 +221,6 @@ Required JSON shape:
   "detected_risks_or_conflicts": []
 }
 """.strip(),
-
     "prompt_generate_layout": """
 You are generating a first 2D facility layout proposal.
 
@@ -285,7 +279,6 @@ Additional rules:
 
 Return JSON only. No markdown. No commentary outside the JSON object.
 """.strip(),
-
     "prompt_request_layout_feedback": """
 You are presenting a proposed facility layout to the user for review.
 
@@ -313,7 +306,6 @@ Suggested example review format:
 - Interface missing between Receiving and Inspection
 - Approval status: Not approved yet
 """.strip(),
-
     "prompt_refine_layout": """
 You are revising the current facility layout proposal based on user feedback.
 
@@ -365,7 +357,6 @@ Rules:
 - Do not remove a function unless the user explicitly requests it
 - Return JSON only
 """.strip(),
-
     "prompt_finalize_approved_layout": """
 You are finalizing the facility layout workflow.
 
@@ -388,7 +379,6 @@ Rules:
   LAYOUT_NOT_YET_APPROVED
 - If approval is explicit, produce a concise finalization response.
 """.strip(),
-
     "prompt_normalize_user_input_to_state": """
 You are normalizing user-provided facility layout information into a structured state object for orchestration.
 
@@ -438,7 +428,6 @@ Rules:
 - If the user explicitly approves the layout, set approval_status.approved to true.
 - Return valid JSON only.
 """.strip(),
-
     "prompt_detect_next_workflow_step": """
 You are a workflow routing assistant for a facility layout agent.
 

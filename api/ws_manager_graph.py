@@ -24,7 +24,7 @@ class ConnectionManager:
         except Exception as e:
             print("SEND FAILED:", e)
             self.disconnect(session_id)
-            
+
     async def broadcast_json(self, data: dict):
         """Main helper you will use from LLM / LangGraph"""
 

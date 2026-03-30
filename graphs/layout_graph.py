@@ -17,23 +17,59 @@ from nodes.normalize_user_input_node import normalize_user_input_node
 from state.facility_layout_graph import FacilityState
 from langgraph.checkpoint.memory import InMemorySaver
 
+
 def build_graph(llm):
     builder = StateGraph(FacilityState)
 
     # Nodes
-    builder.add_node("normalize", log_node("normalize", lambda s: normalize_user_input_node(s, llm)))
+    builder.add_node(
+        "normalize", log_node("normalize", lambda s: normalize_user_input_node(s, llm))
+    )
     builder.add_node("router", log_node("router", lambda s: router_node(s, llm)))
-    builder.add_node("dispatch_input", log_node("dispatch_input", lambda s: dispatch_user_input_node(s)))
+    builder.add_node(
+        "dispatch_input",
+        log_node("dispatch_input", lambda s: dispatch_user_input_node(s)),
+    )
 
-    builder.add_node("ASK_OVERALL_SURFACE_AND_FUNCTION", log_node("ASK_OVERALL_SURFACE_AND_FUNCTION", lambda s: ask_overall_node(s, llm)))
-    builder.add_node("COLLECT_PROCESS_LIST", log_node("COLLECT_PROCESS_LIST", lambda s: collect_process_list_node(s, llm)))
-    builder.add_node("VALIDATE_PROCESS_LIST", log_node("VALIDATE_PROCESS_LIST", lambda s: validate_process_list_node(s, llm)))
-    builder.add_node("COLLECT_LAYOUT_CONSTRAINTS", log_node("COLLECT_LAYOUT_CONSTRAINTS", lambda s: collect_constraints_node(s, llm)))
-    builder.add_node("PREPARE_LAYOUT_SUMMARY", log_node("PREPARE_LAYOUT_SUMMARY", lambda s: prepare_summary_node(s, llm)))
-    builder.add_node("GENERATE_LAYOUT", log_node("GENERATE_LAYOUT", lambda s: generate_layout_node(s, llm)))
-    builder.add_node("REQUEST_LAYOUT_FEEDBACK", log_node("REQUEST_LAYOUT_FEEDBACK", lambda s: request_feedback_node(s, llm)))
-    builder.add_node("REFINE_LAYOUT", log_node("REFINE_LAYOUT", lambda s: refine_layout_node(s, llm)))
-    builder.add_node("FINALIZE_APPROVED_LAYOUT", log_node("FINALIZE_APPROVED_LAYOUT", lambda s: finalize_node(s, llm)))
+    builder.add_node(
+        "ASK_OVERALL_SURFACE_AND_FUNCTION",
+        log_node(
+            "ASK_OVERALL_SURFACE_AND_FUNCTION", lambda s: ask_overall_node(s, llm)
+        ),
+    )
+    builder.add_node(
+        "COLLECT_PROCESS_LIST",
+        log_node("COLLECT_PROCESS_LIST", lambda s: collect_process_list_node(s, llm)),
+    )
+    builder.add_node(
+        "VALIDATE_PROCESS_LIST",
+        log_node("VALIDATE_PROCESS_LIST", lambda s: validate_process_list_node(s, llm)),
+    )
+    builder.add_node(
+        "COLLECT_LAYOUT_CONSTRAINTS",
+        log_node(
+            "COLLECT_LAYOUT_CONSTRAINTS", lambda s: collect_constraints_node(s, llm)
+        ),
+    )
+    builder.add_node(
+        "PREPARE_LAYOUT_SUMMARY",
+        log_node("PREPARE_LAYOUT_SUMMARY", lambda s: prepare_summary_node(s, llm)),
+    )
+    builder.add_node(
+        "GENERATE_LAYOUT",
+        log_node("GENERATE_LAYOUT", lambda s: generate_layout_node(s, llm)),
+    )
+    builder.add_node(
+        "REQUEST_LAYOUT_FEEDBACK",
+        log_node("REQUEST_LAYOUT_FEEDBACK", lambda s: request_feedback_node(s, llm)),
+    )
+    builder.add_node(
+        "REFINE_LAYOUT", log_node("REFINE_LAYOUT", lambda s: refine_layout_node(s, llm))
+    )
+    builder.add_node(
+        "FINALIZE_APPROVED_LAYOUT",
+        log_node("FINALIZE_APPROVED_LAYOUT", lambda s: finalize_node(s, llm)),
+    )
 
     # Flow
     builder.add_edge(START, "router")
@@ -51,7 +87,7 @@ def build_graph(llm):
             "REQUEST_LAYOUT_FEEDBACK": "REQUEST_LAYOUT_FEEDBACK",
             "REFINE_LAYOUT": "REFINE_LAYOUT",
             "FINALIZE_APPROVED_LAYOUT": "FINALIZE_APPROVED_LAYOUT",
-        }
+        },
     )
 
     # After user input → normalize → router again
@@ -75,7 +111,7 @@ def build_graph(llm):
         builder.add_edge(node, "router")
 
     builder.add_edge("FINALIZE_APPROVED_LAYOUT", END)
-    
+
     checkpointer = InMemorySaver()
 
     return builder.compile(checkpointer=checkpointer)
