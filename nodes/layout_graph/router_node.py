@@ -1,10 +1,13 @@
 from langchain.messages import HumanMessage, SystemMessage
 from langgraph.types import Interrupt
-from api.ws_manager_graph import ws_manager_graph
+import structlog
 
 from helpers.llm_safe_invoke import safe_llm_invoke
+from llm_config import get_chat_model
 from prompts.facility_layout_prompts import FACILITY_LAYOUT_PROMPTS
 from state.facility_layout_graph import FacilityState
+
+logger = structlog.get_logger(__name__)
 
 
 def route_from_step(state: FacilityState):
@@ -19,6 +22,7 @@ def route_from_step(state: FacilityState):
 
 
 def router_node(state: FacilityState, llm):
+   
     prompt = FACILITY_LAYOUT_PROMPTS["prompt_detect_next_workflow_step"]
 
     response = safe_llm_invoke(

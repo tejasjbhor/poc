@@ -14,8 +14,15 @@ AGENTS: dict[str, dict] = {
         "display_name": "agent_2",
         "node_fn": "agent_2.agent_2_node",
         "default_phase": "phase_2_needs",
-        "runs_at_start": True,
+        "runs_at_start": False,
         "description": "Structured requirements",
+    },
+    "layout_agent": {
+        "display_name": "layout_agent",
+        "node_fn": "layout_graph.build_graph",
+        "default_phase": "phase_layout",
+        "runs_at_start": False,
+        "description": "Facility Layout",
     },
 }
 
