@@ -1,7 +1,8 @@
 """CLI: chat and watch (.platform_snapshot.json). Commands: /help /new /quit."""
-
 from __future__ import annotations
 
+import sys
+print("RUNNING FROM:", sys.executable)
 import argparse
 import asyncio
 import json
