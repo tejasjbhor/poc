@@ -5,14 +5,14 @@ from langchain.messages import HumanMessage
 from langchain.messages import SystemMessage
 
 from helpers.llm_safe_invoke import safe_llm_invoke
-from prompts.facility_layout_prompts import FACILITY_LAYOUT_PROMPTS
-from state.facility_layout_graph import FacilityState
+from prompts.system_definition_prompts import SYSTEM_DEFINITION_PROMPTS
+from state.system_definition_graph import SystemDefinitionState
 
 logger = logging.getLogger(__name__)
 
 
-def normalize_user_input_node(state: FacilityState, llm):
-    prompt = FACILITY_LAYOUT_PROMPTS["prompt_normalize_user_input_to_state"]
+def normalize_system_input_node(state: SystemDefinitionState, llm):
+    prompt = SYSTEM_DEFINITION_PROMPTS["prompt_normalize_user_input_to_state"]
     logger.warning(f"STATE: {state}")
 
     raw_input = state.get("raw_user_input") or state.get("value")

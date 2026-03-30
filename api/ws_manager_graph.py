@@ -25,11 +25,16 @@ class ConnectionManager:
             print("SEND FAILED:", e)
             self.disconnect(session_id)
 
+    async def broadcast(self, message: str):
+        for session_id, ws in list(self.connections.items()):
+            try:
+                await ws.send_text(message)
+            except Exception:
+                self.disconnect(session_id)
+
     async def broadcast_json(self, data: dict):
         """Main helper you will use from LLM / LangGraph"""
-
         message = json.dumps(data, ensure_ascii=False)
-
         await self.broadcast(message)
 
 

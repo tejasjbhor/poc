@@ -1,9 +1,7 @@
 from langchain.messages import HumanMessage, SystemMessage
-from langgraph.types import Interrupt
 import structlog
 
 from helpers.llm_safe_invoke import safe_llm_invoke
-from llm_config import get_chat_model
 from prompts.facility_layout_prompts import FACILITY_LAYOUT_PROMPTS
 from state.facility_layout_graph import FacilityState
 
@@ -42,10 +40,6 @@ def router_node(state: FacilityState, llm):
     # Fallback if LLM returns nothing
     if not next_step:
         next_step = route_from_step(state)
-
-    # If this step requires user input, wrap in Interrupt
-    if next_step.startswith("ASK_"):
-        return {"__interrupt__": [Interrupt(value=next_step)]}
 
     print(f"➡️ TRANSITION: {state.get('last_step')} → {next_step}")
 
