@@ -8,8 +8,8 @@ import re
 from typing import Any, Callable, Coroutine, Dict, List, Optional
 
 from langchain_anthropic import ChatAnthropic
-from langchain_core.callbacks import AsyncCallbackHandler
-from langchain_core.messages import HumanMessage
+from langchain.callbacks import AsyncCallbackHandler
+from langchain.messages import HumanMessage
 import structlog
 
 from utils.user_interaction import request_user_input
@@ -19,7 +19,7 @@ from utils.user_interaction import request_user_input
 # module can still be imported for mock/non-LLM flows.
 try:
     from langchain.agents import AgentExecutor, create_react_agent  # type: ignore
-    from langchain_core.prompts import PromptTemplate  # type: ignore
+    from langchain.prompts import PromptTemplate  # type: ignore
 
     _LANGCHAIN_AGENT_AVAILABLE = True
 except Exception:  # pragma: no cover

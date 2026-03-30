@@ -7,7 +7,7 @@ from typing import Callable, Coroutine, Optional
 
 import asyncio
 
-from langchain_core.callbacks import AsyncCallbackHandler
+from langchain.callbacks import AsyncCallbackHandler
 import structlog
 
 from schemas.models import AgentEvent, AgentName, AgentStatus

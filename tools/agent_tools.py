@@ -7,7 +7,7 @@ import os
 from datetime import datetime, timezone
 from typing import Optional
  
-from langchain_core.tools import tool
+from langchain.tools import tool
 import structlog
  
 log = structlog.get_logger(__name__)

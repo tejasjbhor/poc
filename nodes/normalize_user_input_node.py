@@ -2,7 +2,7 @@ import json
 import logging
 
 from langchain.messages import HumanMessage
-from langchain_core.messages import SystemMessage
+from langchain.messages import SystemMessage
 from api.ws_manager_graph import ws_manager_graph
 
 from helpers.llm_safe_invoke import safe_llm_invoke

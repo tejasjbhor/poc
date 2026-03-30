@@ -1,0 +1,16 @@
+{
+  "updated_at": "2026-03-30T10:52:24",
+  "session_id": "c58203f5-89c6-4ec3-8487-8704990834c1",
+  "next_agent": "",
+  "session_goal": "",
+  "goal_progress": "",
+  "inferred_domain": "",
+  "inferred_task": "",
+  "phase": "",
+  "thoughts": [],
+  "checklist": [],
+  "card": null,
+  "buffer_pending": [],
+  "context_for_agents": {},
+  "sa_feedback": null
+}

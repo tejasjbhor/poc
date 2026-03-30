@@ -1,4 +1,4 @@
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain.messages import HumanMessage, SystemMessage
 from langgraph.types import Interrupt
 from api.ws_manager_graph import ws_manager_graph
 
