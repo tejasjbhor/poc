@@ -64,11 +64,11 @@ Example (JSON):
 You are interpreting the user-provided system description.
 
 Input variables:
-- raw_user_input: {raw_user_input}
+- raw_user_input: {first_user_description}
 
 Your task:
 1. Detect whether the input is JSON or free text
-2. Extract an initial list of system functions
+2. Extract system description and an initial list of system functions
 3. Normalize into the target schema
 
 Rules:
@@ -76,92 +76,129 @@ Rules:
 - Do not finalize anything
 - Keep assumptions minimal and explicit
 - Generate function IDs as: f1, f2, f3, ...
+- Output a valid json structure only, with no text before the { and after the }
 
-Output JSON:
+Output:
 {
   "detected_format": "json" | "text",
+  "system_description": "string",
   "system_functions": [
     {
       "id": "string",
       "name": "string",
       "description": "string",
       "surface_area": null,
-      "interfaces_in": [],
-      "interfaces_out": []
+      "interfaces_in": [{"function_id": "string", "materials": []}],
+      "interfaces_out": [{"function_id": "string", "materials": []}]
     }
   ],
   "assumptions": []
 }
 """.strip(),
-    "prompt_validate_system_functions": """
-You are validating the extracted system functions.
-
-Input variables:
-- system_functions_json: {system_functions_json}
-
-Your task:
-1. Detect missing, inconsistent, or unclear elements
-2. Determine if the model is usable for a first iteration
-
-Validation checklist:
-- missing IDs
-- duplicate IDs
-- missing names or descriptions
-- empty or meaningless descriptions
-- invalid interface references
-- interfaces pointing to non-existing IDs
-- functions with no logical role
-- too many or too few functions for the described system
-
-Output rules:
-- If acceptable, return exactly:
-  SYSTEM_FUNCTIONS_ACCEPTED
-- Otherwise, ask for precise corrections only
-
-Do not rewrite the full list.
-Be concise and structured.
-""".strip(),
     "prompt_request_function_refinement": """
-You are asking the user to refine and complete the system functions.
+You are a senior system design reviewer helping the user refine a system specification iteratively.
 
-Current system functions:
-{system_functions_json}
+You are given the current state of the system:
 
-Assumptions:
+SYSTEM DESCRIPTION:
+{system_description}
+
+SYSTEM FUNCTIONS:
+{system_functions}
+
+ASSUMPTIONS:
 {assumptions}
 
-Your task:
-Ask the user to:
-1. Confirm correctness
-2. Add missing functions
-3. Modify names or descriptions
-4. Define or correct interfaces
-5. Provide missing surface areas (optional)
+For context, the structre of System Functions is : 
+"system_functions": [
+    {
+      "id": "string",
+      "name": "string",
+      "description": "string",
+      "surface_area": null,
+      "interfaces_in": [{"function_id": "string", "materials": []}],
+      "interfaces_out": [{"function_id": "string", "materials": []}]
+    }
+  ]
+---
 
-Instructions:
-- Keep it structured and actionable
-- Provide a simple editable JSON template
-- Allow partial updates
-- Make it easy to respond
+YOUR ROLE:
 
-Suggested response format:
+1. Analyze the current system critically (do not assume it is incomplete)
+2. Detect:
+   - missing functions
+   - unclear or inconsistent descriptions
+   - invalid or vague interfaces
+   - duplication or overlap between functions
+   - missing dependencies between functions
+   - contradictions between assumptions and functions
+3. ONLY ask for missing or incorrect information (do NOT repeat already correct parts)
+
+---
+
+INTELLIGENCE RULES:
+
+- If a field is already correctly defined → do NOT mention it
+- If surface area / interface is already defined per function → do NOT ask for it again
+- If something is ambiguous → propose a correction instead of asking a question
+- If something is inconsistent → highlight it explicitly
+- If everything is complete in a category → skip it entirely
+
+---
+
+YOUR OUTPUT MUST:
+
+A. Provide a structured review:
+
+- ✅ Valid parts (what is already correct)
+- ⚠️ Issues found (with explanation)
+- ❌ Missing elements (only what is truly missing)
+
+B. Provide suggested corrections (when possible instead of questions)
+
+C. Ask ONLY targeted questions when necessary
+
+---
+
+D. Provide an updated JSON edit proposal:
+
+Use this format:
+
 {
   "modifications": [
     {
-      "id": "f2",
-      "field": "description",
-      "new_value": "Updated description"
+      "id": "function_id",
+      "field": "name | description | interface | assumptions",
+      "new_value": "proposed corrected value"
     }
   ],
-  "additions": [],
-  "deletions": []
+  "additions": [
+    {
+      "name": "",
+      "description": "",
+      "interface": {}
+    }
+  ],
+  "deletions": [
+    "function_id"
+  ]
 }
+
+---
+
+IMPORTANT RULES:
+- Do not repeat full system unless necessary
+- Be minimal but precise
+- Prefer corrections over questions
+- Only ask user when information cannot be inferred or safely corrected
 """.strip(),
     "prompt_update_system_functions": """
 You are updating the system functions based on user feedback.
 
 Input variables:
-- current_system_functions: {current_system_functions}
+- current_system_description: {system_description} 
+- current_system_functions: {system_functions}
+- current_assumptions: {assumptions}
 - user_feedback: {user_feedback}
 
 Your task:
@@ -174,92 +211,18 @@ Your task:
 
 Return JSON only:
 {
-  "system_functions": [...]
-}
-""".strip(),
-    "prompt_finalize_system_definition": """
-You are finalizing the system definition.
-
-Input variables:
-- system_functions_json: {system_functions_json}
-- user_approval: {user_approval}
-
-Your task:
-- Check if the user explicitly approved the system definition
-
-Rules:
-- If NOT approved, return exactly:
-  SYSTEM_NOT_APPROVED
-- If approved:
-  1. Confirm completion
-  2. Provide final structured system functions
-  3. Add a short summary (3-5 lines)
-
-Ensure:
-- IDs are unique
-- Interfaces reference valid IDs only
-- No duplicates
-
-Return structured output.
-""".strip(),
-    "prompt_normalize_user_input_to_state": """
-You are normalizing user input into the system definition state.
-
-Input variables:
-- raw_user_input: {raw_user_input}
-- current_state_json: {current_state_json}
-
-Target schema:
-{
+  "system_description": "string",
   "system_functions": [
     {
-      "id": null,
-      "name": null,
-      "description": null,
+      "id": "string",
+      "name": "string",
+      "description": "string",
       "surface_area": null,
-      "interfaces_in": [],
-      "interfaces_out": []
+      "interfaces_in": [{"function_id": "string", "materials": []}],
+      "interfaces_out": [{"function_id": "string", "materials": []}]
     }
   ],
-  "assumptions": [],
-  "validation_status": {
-    "accepted": false
-  },
-  "approval_status": {
-    "approved": false
-  }
+  "assumptions": []
 }
-
-Rules:
-- Merge new data without deleting valid previous data
-- Preserve user intent
-- Do not invent missing fields
-- If user approves, set approval_status.approved = true
-
-Return JSON only.
-""".strip(),
-    "prompt_detect_next_workflow_step": """
-You are a workflow routing assistant for a system definition agent.
-
-Input variables:
-- current_state_json: {current_state_json}
-
-Possible outputs:
-- REQUEST_SYSTEM_INPUT
-- INTERPRET_SYSTEM_INPUT
-- VALIDATE_SYSTEM_FUNCTIONS
-- REQUEST_FUNCTION_REFINEMENT
-- UPDATE_SYSTEM_FUNCTIONS
-- FINALIZE_SYSTEM_DEFINITION
-
-Routing rules:
-1. If no system input exists, output REQUEST_SYSTEM_INPUT
-2. If raw input exists but not yet interpreted, output INTERPRET_SYSTEM_INPUT
-3. If functions exist but not validated, output VALIDATE_SYSTEM_FUNCTIONS
-4. If validation failed or refinement needed, output REQUEST_FUNCTION_REFINEMENT
-5. If user provided updates, output UPDATE_SYSTEM_FUNCTIONS
-6. If user explicitly approved, output FINALIZE_SYSTEM_DEFINITION
-
-Return exactly one step token.
 """.strip(),
 }

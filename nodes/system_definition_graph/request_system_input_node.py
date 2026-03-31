@@ -9,15 +9,18 @@ from langgraph.types import interrupt, Interrupt
 def request_system_input_node(state: SystemDefinitionState, llm):
     prompt = SYSTEM_DEFINITION_PROMPTS["prompt_request_system_input"]
 
-    response = safe_llm_invoke(
-        llm,
-        [HumanMessage(content=prompt)],
-    )
+    if "question" not in state:
+        question = safe_llm_invoke(
+            llm,
+            [HumanMessage(content=prompt)],
+        ).content
+    else:
+        question = state["question"]
 
-    user_input = interrupt(response.content)
+    first_user_description = interrupt(question)
 
     return {
-        "__interrupt__": [
-            Interrupt(value={"raw_user_input": user_input})
-        ]
+        "question": question,
+        "first_user_description": first_user_description["raw_user_input"],
+        "step": "INTERPRET_SYSTEM_INPUT",
     }

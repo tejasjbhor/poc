@@ -3,13 +3,14 @@ import json
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from langgraph.types import Command
+from datetime import datetime, timezone
 
 from graphs.system_definition_graph import build_system_definition_graph
 from langchain_anthropic import ChatAnthropic
 
 from utils.config import get_settings
 from api.ws_manager_graph import ws_manager_graph
-from utils.serializers import serialize_interrupt
+from utils.serializers import normalize_graph_event
 
 
 system_definition_router = APIRouter()
@@ -21,7 +22,7 @@ cfg = get_settings()
 llm = ChatAnthropic(
     model=cfg.anthropic_model,
     api_key=cfg.anthropic_api_key,
-    max_tokens=1024,
+    max_tokens=4096,
     temperature=0.2,
 )
 
@@ -35,16 +36,21 @@ graph = build_system_definition_graph(llm)
 # Graph execution
 # -------------------
 async def start_graph(session_id: str, data: dict):
+
     state = {
-        "last_step": "REQUEST_SYSTEM_INPUT",
-        "raw_user_input": data.get("payload"),
+        "step": "REQUEST_SYSTEM_INPUT",
+        # "raw_user_input": data.get("payload"),
     }
 
     async for update in graph.astream(
         state,
         config={"configurable": {"thread_id": session_id}},
     ):
-        clean = serialize_interrupt(update)
+        clean = normalize_graph_event(update)
+
+        if clean is None:
+            continue
+
         await ws_manager_graph.send(session_id, clean)
 
 
@@ -54,12 +60,41 @@ async def handle_resume(session_id: str, data: dict):
 
     async for update in graph.astream(
         Command(
-            resume={"interrupt_id": interrupt_id},
-            update={"raw_user_input": value},
+            resume={"interrupt_id": interrupt_id, "raw_user_input": value},
         ),
         config={"configurable": {"thread_id": session_id}},
     ):
-        clean = serialize_interrupt(update)
+        # TODO Not a clean solution, to be improved
+        if "__interrupt__" in update:
+            step = None
+        else:
+            node_name, payload = next(iter(update.items()))  # 👈 step 1
+            step = payload.get("step")  # 👈 step 2
+
+        if step == "FINAL":
+            snapshot = await graph.aget_state(
+                config={"configurable": {"thread_id": session_id}}
+            )
+            state = snapshot.values
+            await ws_manager_graph.send(
+                session_id,
+                {
+                    "type": "finished",
+                    "data": {
+                        "system_description": state.get("system_description"),
+                        "system_functions": state.get("system_functions"),
+                        "assumptions": state.get("assumptions"),
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    },
+                },
+            )
+            continue
+
+        clean = normalize_graph_event(update)
+
+        if clean is None:
+            continue
+
         await ws_manager_graph.send(session_id, clean)
 
 

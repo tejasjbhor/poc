@@ -12,6 +12,7 @@ from langchain.callbacks import AsyncCallbackHandler
 from langchain.messages import HumanMessage
 import structlog
 
+from utils.json_utils import coerce_json
 from utils.user_interaction import request_user_input
 
 # LangChain "agent" stack may fail to import in some environments if
@@ -252,18 +253,7 @@ Rules:
 """
 
 
-def coerce_json(text: str) -> Any:
-    """Extract/parse JSON from an LLM response, tolerating markdown fences."""
-    raw = (text or "").strip()
-    raw = re.sub(r"^```json\s*|^```\s*|```$", "", raw).strip()
-    try:
-        return json.loads(raw)
-    except Exception:
-        # Fallback: extract the first JSON object/array in the string.
-        m = re.search(r"\{[\s\S]*\}|\[[\s\S]*\]", raw)
-        if not m:
-            raise
-        return json.loads(m.group())
+
 
 def _build_step4_filter_prompt(understanding_json: str, candidates_json: str) -> str:
     """Prompt from notebook build_step4_filter_prompt (adapted for our candidate shape)."""
@@ -476,7 +466,7 @@ async def run_research_agent(
         llm_step2 = ChatAnthropic(
             model=cfg.anthropic_model,
             api_key=cfg.anthropic_api_key,
-            max_tokens=1024,
+            max_tokens=4096,
             temperature=0.2,
         )
 

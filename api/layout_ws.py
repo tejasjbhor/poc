@@ -10,7 +10,7 @@ from langgraph.types import Command
 from graphs.layout_graph import build_graph
 from langchain_anthropic import ChatAnthropic
 from utils.config import get_settings
-from utils.serializers import serialize_interrupt
+from utils.serializers import normalize_graph_event
 
 
 layout_router = APIRouter()
@@ -20,7 +20,7 @@ cfg = get_settings()
 llm = ChatAnthropic(
     model=cfg.anthropic_model,
     api_key=cfg.anthropic_api_key,
-    max_tokens=1024,
+    max_tokens=4096,
     temperature=0.2,
 )
 
@@ -37,7 +37,7 @@ async def start_graph(session_id: str, data: dict):
     async for update in graph.astream(
         state, config={"configurable": {"thread_id": session_id}}
     ):
-        clean = serialize_interrupt(update)
+        clean = normalize_graph_event(update)
         await ws_manager_graph.send(session_id, clean)
 
 
@@ -51,7 +51,7 @@ async def handle_resume(session_id: str, data: dict):
         ),
         config={"configurable": {"thread_id": session_id}},
     ):
-        clean = serialize_interrupt(update)
+        clean = normalize_graph_event(update)
         await ws_manager_graph.send(session_id, clean)
 
 
