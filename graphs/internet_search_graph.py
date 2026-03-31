@@ -1,0 +1,163 @@
+from langgraph.graph import StateGraph, START, END
+from langgraph.checkpoint.memory import InMemorySaver
+
+from helpers.log_node import log_node
+from nodes.internet_search_graph.extract_candidates_node import extract_candidates_node
+from nodes.internet_search_graph.final_validation_node import final_validation_node
+from nodes.internet_search_graph.generate_queries_node import generate_queries_node
+from nodes.internet_search_graph.interpret_system_input_node import (
+    interpret_system_input_node,
+)
+from nodes.internet_search_graph.rank_candidates_node import rank_candidates_node
+from nodes.internet_search_graph.request_system_input_node import (
+    request_system_input_node,
+)
+from nodes.internet_search_graph.search_sources_node import search_sources_node
+from nodes.internet_search_graph.validate_queries_node import validate_queries_node
+from nodes.internet_search_graph.validate_system_input_node import (
+    validate_system_input_node,
+)
+from state.internet_search_graph import InternetSearchState
+
+
+def build_internet_search_graph(llm, tools):
+    builder = StateGraph(InternetSearchState)
+
+    # =========================
+    # Nodes
+    # =========================
+
+    builder.add_node(
+        "REQUEST_SYSTEM_INPUT",
+        log_node(
+            "REQUEST_SYSTEM_INPUT",
+            lambda s: request_system_input_node(s, llm),
+        ),
+    )
+
+    builder.add_node(
+        "INTERPRET_SYSTEM_INPUT",
+        log_node(
+            "INTERPRET_SYSTEM_INPUT",
+            lambda s: interpret_system_input_node(s, llm),
+        ),
+    )
+
+    builder.add_node(
+        "VALIDATE_SYSTEM_INPUT",
+        log_node(
+            "VALIDATE_SYSTEM_INPUT",
+            lambda s: validate_system_input_node(s, llm),
+        ),
+    )
+
+    builder.add_node(
+        "GENERATE_QUERIES",
+        log_node(
+            "GENERATE_QUERIES",
+            lambda s: generate_queries_node(s, llm),
+        ),
+    )
+
+    builder.add_node(
+        "VALIDATE_QUERIES",
+        log_node(
+            "VALIDATE_QUERIES",
+            lambda s: validate_queries_node(s),
+        ),
+    )
+
+    builder.add_node(
+        "SEARCH_SOURCES",
+        log_node(
+            "SEARCH_SOURCES",
+            lambda s: search_sources_node(s, tools),
+        ),
+    )
+
+    builder.add_node(
+        "EXTRACT_CANDIDATES",
+        log_node(
+            "EXTRACT_CANDIDATES",
+            lambda s: extract_candidates_node(s, llm),
+        ),
+    )
+
+    builder.add_node(
+        "RANK_CANDIDATES",
+        log_node(
+            "RANK_CANDIDATES",
+            lambda s: rank_candidates_node(s, llm),
+        ),
+    )
+
+    builder.add_node(
+        "FINAL_VALIDATION",
+        log_node(
+            "FINAL_VALIDATION",
+            lambda s: final_validation_node(s),
+        ),
+    )
+
+    # =========================
+    # Entry
+    # =========================
+
+    builder.add_edge(START, "REQUEST_SYSTEM_INPUT")
+
+    # =========================
+    # Linear Flow
+    # =========================
+
+    builder.add_edge("REQUEST_SYSTEM_INPUT", "INTERPRET_SYSTEM_INPUT")
+    builder.add_edge("INTERPRET_SYSTEM_INPUT", "VALIDATE_SYSTEM_INPUT")
+
+    builder.add_edge("GENERATE_QUERIES", "VALIDATE_QUERIES")
+    builder.add_edge("VALIDATE_QUERIES", "SEARCH_SOURCES")
+
+    builder.add_edge("SEARCH_SOURCES", "EXTRACT_CANDIDATES")
+    builder.add_edge("EXTRACT_CANDIDATES", "RANK_CANDIDATES")
+    builder.add_edge("RANK_CANDIDATES", "FINAL_VALIDATION")
+
+    # =========================
+    # Conditional Routing (STEP-DRIVEN)
+    # =========================
+
+    # 🔁 System understanding loop
+    builder.add_conditional_edges(
+        "VALIDATE_SYSTEM_INPUT",
+        lambda s: s["step"],
+        {
+            "INTERPRET_SYSTEM_INPUT": "INTERPRET_SYSTEM_INPUT",  # user edited → re-interpret
+            "GENERATE_QUERIES": "GENERATE_QUERIES",  # approved → continue
+        },
+    )
+
+    # 🔁 Query validation loop
+    builder.add_conditional_edges(
+        "VALIDATE_QUERIES",
+        lambda s: s["step"],
+        {
+            "GENERATE_QUERIES": "GENERATE_QUERIES",  # refine queries
+            "SEARCH_SOURCES": "SEARCH_SOURCES",  # approved
+        },
+    )
+
+    # 🔁 Final validation loop (VERY IMPORTANT)
+    builder.add_conditional_edges(
+        "FINAL_VALIDATION",
+        lambda s: s["step"],
+        {
+            "GENERATE_QUERIES": "GENERATE_QUERIES",  # refine everything
+            "SEARCH_SOURCES": "SEARCH_SOURCES",  # rerun search
+            "FINAL": END,  # done
+        },
+    )
+
+    # =========================
+    # Checkpointer
+    # =========================
+
+    checkpointer = InMemorySaver()
+
+    return builder.compile(checkpointer=checkpointer)
