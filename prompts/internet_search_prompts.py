@@ -41,10 +41,13 @@ The input will be used to generate search queries and find technical solutions.
     # ------------------------------------------------------------
     # STEP 2 — USER VALIDATION PROMPT
     # ------------------------------------------------------------
-    "prompt_request_system_understanding_validation": """
+    "prompt_validate_system_input": """
 You are starting a system research workflow.
 
 You have generated an initial structured understanding of the system.
+
+Input variables:
+- system_understanding: {system_understanding}
 
 Your task:
 - Present the extracted system understanding to the user
@@ -60,28 +63,86 @@ Instructions:
     # ------------------------------------------------------------
     # STEP 3 — QUERY GENERATION
     # ------------------------------------------------------------
-    "query_generation": """
-You are a research query generation engine.
+    "prompt_generate_queries": """
+You are a research query generation engine specialized in technical and scientific discovery.
 
-Your goal is to generate high-quality search queries to find:
+Your goal is to generate or refine high-quality search queries to identify:
 - technologies
 - methods
 - systems
 - scientific approaches
 
-Input:
-- system function
-- domain
-- constraints
-- active domains
+----------------------------------------
+INPUT VARIABLES
 
-Rules:
-- Queries must be specific and search-engine friendly
-- Avoid vague terms
-- Prefer technical and academic phrasing
-- Do not include explanations
+- system_understanding: {system_understanding}
 
-OUTPUT FORMAT (JSON ONLY):
+Optional:
+- queries: {queries}  # previously generated queries
+- user_queries_refinement: {user_queries_refinement}  # user feedback, edits, or suggestions
+
+----------------------------------------
+YOUR TASK
+
+You must operate in ONE of the following modes:
+
+### 1. INITIAL GENERATION
+If no previous queries are provided:
+→ Generate a new set of queries based on system understanding
+
+### 2. REFINEMENT
+If previous queries exist:
+→ Improve them by:
+- increasing technical precision
+- adding missing dimensions (methods, technologies, constraints)
+- removing weak or vague queries
+
+### 3. USER-DRIVEN CORRECTION (HIGHEST PRIORITY)
+If user_queries_refinement is provided:
+→ You MUST:
+- strictly incorporate user suggestions
+- modify existing queries accordingly
+- add new queries if requested
+- remove queries if explicitly rejected
+- NEVER ignore user input
+
+----------------------------------------
+QUERY DESIGN RULES
+
+- Queries must be:
+  - specific
+  - technical
+  - optimized for search engines and academic databases
+
+- Prefer:
+  - domain-specific terminology
+  - known technical keywords
+  - combinations of:
+    → function + technology
+    → constraint + method
+    → domain + implementation
+
+- Avoid:
+  - vague terms (e.g., "best system", "good technology")
+  - natural language questions
+  - redundant queries
+
+- Ensure:
+  - diversity of approaches
+  - no duplicates
+  - max 10 queries
+
+----------------------------------------
+IMPORTANT CONSTRAINTS
+
+- Do NOT explain anything
+- Do NOT include reasoning
+- Do NOT include comments
+- Output ONLY valid JSON
+
+----------------------------------------
+OUTPUT FORMAT
+
 {
   "queries": ["string", "string", "string"]
 }
@@ -89,12 +150,18 @@ OUTPUT FORMAT (JSON ONLY):
     # ------------------------------------------------------------
     # STEP 3 — CANDIDATE EXTRACTION
     # ------------------------------------------------------------
-    "candidate_extraction": """
+    "prompt_extract_candidates": """
 You are a research extraction agent.
 
 You are given:
 - A confirmed system understanding
 - Raw search results (papers, web pages, databases)
+
+----------------------------------------
+INPUT VARIABLES
+
+- system_understanding: {system_understanding}
+- candidates: {candidates}
 
 Your task:
 Extract candidate solutions that could satisfy the system function.
@@ -129,10 +196,16 @@ OUTPUT FORMAT (JSON ONLY):
     # ------------------------------------------------------------
     # STEP 4 — RANKING / EVALUATION
     # ------------------------------------------------------------
-    "ranking": """
+    "prompt_rank_candidates": """
 You are a senior engineering evaluator.
 
 You are given a list of candidate solutions for a system function.
+
+----------------------------------------
+INPUT VARIABLES
+
+- system_understanding: {system_understanding}
+- raw_results: {raw_results}
 
 Your task:
 Evaluate and rank each candidate based on:
@@ -168,26 +241,16 @@ OUTPUT FORMAT (JSON ONLY):
 ]
 """.strip(),
     # ------------------------------------------------------------
-    # STEP 3 — FALLBACK QUERY PROMPT (optional safety)
-    # ------------------------------------------------------------
-    "fallback_queries": """
-Generate fallback search queries when system understanding is incomplete.
-
-Rules:
-- Use domain-level generalization
-- Keep queries broad but technical
-- Ensure search engines can return useful results
-
-OUTPUT FORMAT:
-{
-  "queries": ["string", "string", "string"]
-}
-""".strip(),
-    # ------------------------------------------------------------
     # STEP 4 — USER VALIDATION FINAL RESULTS
     # ------------------------------------------------------------
-    "prompt_request_final_validation": """
+    "prompt_final_validation": """
 You have completed the research and ranking process.
+
+----------------------------------------
+INPUT VARIABLES
+
+- system_understanding: {system_understanding}
+- ranked_candidates: {ranked_candidates}
 
 Your task:
 - Present the final ranked list of candidate solutions

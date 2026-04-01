@@ -7,7 +7,7 @@ from tools.agent_tools import search_osti
 
 
 async def osti_structured(query: str):
-    raw = await search_osti.ainvoke({"query": query})
+    raw = await search_osti({"query": query})
     return json.loads(raw)
 
 

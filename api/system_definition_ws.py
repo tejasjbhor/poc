@@ -46,7 +46,7 @@ async def start_graph(session_id: str, data: dict):
         state,
         config={"configurable": {"thread_id": session_id}},
     ):
-        clean = normalize_graph_event(update)
+        clean = normalize_graph_event(update, graph_name="system_definition")
 
         if clean is None:
             continue
@@ -90,7 +90,7 @@ async def handle_resume(session_id: str, data: dict):
             )
             continue
 
-        clean = normalize_graph_event(update)
+        clean = normalize_graph_event(update, graph_name="system_definition")
 
         if clean is None:
             continue
@@ -101,7 +101,7 @@ async def handle_resume(session_id: str, data: dict):
 # -------------------
 # WebSocket endpoint
 # -------------------
-@system_definition_router.websocket("/ws/search/{session_id}")
+@system_definition_router.websocket("/ws/system/{session_id}")
 async def system_definition_ws(websocket: WebSocket, session_id: str):
     await ws_manager_graph.connect(session_id, websocket)
 

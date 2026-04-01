@@ -1,33 +1,46 @@
 import asyncio
+import traceback
 
 from state.internet_search_graph import InternetSearchState
+
 
 async def search_sources_node(state: InternetSearchState, tools):
     queries = state.get("queries", [])
 
     raw_results = {
         "arxiv": [],
-        "semantic_scholar": [],
-        "openalex": [],
-        "crossref": [],
-        "osti": [],
+        # "semantic_scholar": [],
+        # "openalex": [],
+        # "crossref": [],
+        # "osti": [],
         "web": [],
     }
 
     # limit queries to avoid explosion
     queries = queries[:6]
 
+    import traceback
+
+
     async def run_tool(tool_name: str, tool, query: str):
         try:
             result = await tool.ainvoke({"query": query})
+
             return tool_name, {
                 "query": query,
                 "results": result,
             }
-        except Exception:
+
+        except Exception as e:
+            print(f"\n❌ TOOL ERROR [{tool_name}] for query: {query}")
+            traceback.print_exc()
+
             return tool_name, {
                 "query": query,
-                "results": {"error": "tool_failed"},
+                "results": {
+                    "error": "tool_failed",
+                    "details": str(e),
+                },
             }
 
     # 🔥 parallel execution across tools AND queries

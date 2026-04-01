@@ -28,6 +28,6 @@ def rank_candidates_node(state: InternetSearchState, llm):
     parsed = coerce_json(response.content)
 
     return {
-        "ranked_candidates": parsed.get("ranked_candidates", parsed),
+        "ranked_candidates": parsed,
         "step": "FINAL_VALIDATION",
     }

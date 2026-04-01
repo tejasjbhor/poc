@@ -15,7 +15,17 @@ def generate_queries_node(state: InternetSearchState, llm):
         llm,
         [
             SystemMessage(content=prompt),
-            HumanMessage(content=json.dumps(state.get("system_understanding", {}))),
+            HumanMessage(
+                content=json.dumps(
+                    {
+                        "system_understanding": state.get("system_understanding", {}),
+                        "queries": state.get("queries", {}),
+                        "user_queries_refinement": state.get(
+                            "user_queries_refinment", ""
+                        ),
+                    }
+                )
+            ),
         ],
     )
 

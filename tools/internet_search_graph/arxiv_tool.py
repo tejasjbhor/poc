@@ -7,7 +7,7 @@ from tools.agent_tools import search_arxiv
 
 
 async def arxiv_structured(query: str):
-    raw = await search_arxiv.ainvoke({"query": query})
+    raw = await search_arxiv(query)
     return json.loads(raw)
 
 

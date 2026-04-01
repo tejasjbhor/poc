@@ -6,7 +6,7 @@ from tools.agent_tools import search_semantic_scholar
 
 
 async def semantic_scholar_structured(query: str):
-    raw = await search_semantic_scholar.ainvoke({"query": query})
+    raw = await search_semantic_scholar({"query": query})
     return json.loads(raw)
 
 

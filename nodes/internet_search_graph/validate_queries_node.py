@@ -1,30 +1,21 @@
 from langchain.messages import HumanMessage
 from langgraph.types import interrupt
 
+from helpers.interpret_user_input import is_done_user_input
 from helpers.llm_safe_invoke import safe_llm_invoke
 from state.internet_search_graph import InternetSearchState
 from prompts.internet_search_prompts import INTERNET_SEARCH_PROMPTS
 
 
 def validate_queries_node(state: InternetSearchState, llm):
-    prompt = INTERNET_SEARCH_PROMPTS["prompt_validate_queries"]
+    question = "Please validate the generated queries. You may add or remove by resquesting in the chat, if not, type done to proceed."
 
-    question = safe_llm_invoke(
-        llm,
-        [HumanMessage(content=prompt)],
-    ).content
+    user_action = interrupt(question)
 
-    user_action = interrupt(
-        {
-            "question": question,
-            "queries": state.get("queries"),
-        }
-    )
-
-    if user_action["action"] == "edit":
+    if not is_done_user_input(user_action["raw_user_input"]):
         return {
-            "queries": user_action["data"],
-            "step": "VALIDATE_QUERIES",
+            "user_queries_refinment": user_action["raw_user_input"],
+            "step": "GENERATE_QUERIES",
         }
 
     return {

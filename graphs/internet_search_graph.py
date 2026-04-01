@@ -63,15 +63,18 @@ def build_internet_search_graph(llm, tools):
         "VALIDATE_QUERIES",
         log_node(
             "VALIDATE_QUERIES",
-            lambda s: validate_queries_node(s),
+            lambda s: validate_queries_node(s, llm),
         ),
     )
+
+    async def search_sources_bound(state):
+        return await search_sources_node(state, tools)
 
     builder.add_node(
         "SEARCH_SOURCES",
         log_node(
             "SEARCH_SOURCES",
-            lambda s: search_sources_node(s, tools),
+            search_sources_bound,
         ),
     )
 
@@ -95,7 +98,7 @@ def build_internet_search_graph(llm, tools):
         "FINAL_VALIDATION",
         log_node(
             "FINAL_VALIDATION",
-            lambda s: final_validation_node(s),
+            lambda s: final_validation_node(s, llm),
         ),
     )
 
@@ -113,7 +116,6 @@ def build_internet_search_graph(llm, tools):
     builder.add_edge("INTERPRET_SYSTEM_INPUT", "VALIDATE_SYSTEM_INPUT")
 
     builder.add_edge("GENERATE_QUERIES", "VALIDATE_QUERIES")
-    builder.add_edge("VALIDATE_QUERIES", "SEARCH_SOURCES")
 
     builder.add_edge("SEARCH_SOURCES", "EXTRACT_CANDIDATES")
     builder.add_edge("EXTRACT_CANDIDATES", "RANK_CANDIDATES")

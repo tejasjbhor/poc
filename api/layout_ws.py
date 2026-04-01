@@ -37,7 +37,7 @@ async def start_graph(session_id: str, data: dict):
     async for update in graph.astream(
         state, config={"configurable": {"thread_id": session_id}}
     ):
-        clean = normalize_graph_event(update)
+        clean = normalize_graph_event(update, graph_name="layout")
         await ws_manager_graph.send(session_id, clean)
 
 
@@ -51,7 +51,7 @@ async def handle_resume(session_id: str, data: dict):
         ),
         config={"configurable": {"thread_id": session_id}},
     ):
-        clean = normalize_graph_event(update)
+        clean = normalize_graph_event(update, graph_name="layout")
         await ws_manager_graph.send(session_id, clean)
 
 

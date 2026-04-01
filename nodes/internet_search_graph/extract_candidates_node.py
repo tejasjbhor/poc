@@ -18,17 +18,16 @@ def extract_candidates_node(state: InternetSearchState, llm):
             HumanMessage(
                 content=json.dumps(
                     {
-                        "system_understanding": state.get("system_understanding"),
-                        "raw_results": state.get("raw_results"),
+                        "system_understanding": state.get("system_understanding", {}),
+                        "raw_results": state.get("raw_results", {}),
                     }
                 )
             ),
         ],
     )
-
     parsed = coerce_json(response.content)
 
     return {
-        "candidates": parsed.get("candidates", parsed),
+        "candidates": parsed,
         "step": "RANK_CANDIDATES",
     }

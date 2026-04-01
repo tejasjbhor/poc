@@ -7,7 +7,7 @@ from tools.agent_tools import search_crossref
 
 
 async def crossref_structured(query: str):
-    raw = await search_crossref.ainvoke({"query": query})
+    raw = await search_crossref({"query": query})
     return json.loads(raw)
 
 

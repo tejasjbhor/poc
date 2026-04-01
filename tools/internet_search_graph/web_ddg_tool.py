@@ -7,7 +7,7 @@ from tools.agent_tools import search_web_ddg
 
 
 async def web_structured(query: str):
-    raw = await search_web_ddg.ainvoke({"query": query})
+    raw = await search_web_ddg(query)
     return json.loads(raw)
 
 

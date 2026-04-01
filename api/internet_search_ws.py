@@ -49,7 +49,7 @@ async def start_graph(session_id: str, data: dict):
         state,
         config={"configurable": {"thread_id": session_id}},
     ):
-        clean = normalize_graph_event(update)
+        clean = normalize_graph_event(update, graph_name="internet_search")
 
         if clean is None:
             continue
@@ -103,7 +103,7 @@ async def handle_resume(session_id: str, data: dict):
             )
             continue
 
-        clean = normalize_graph_event(update)
+        clean = normalize_graph_event(update, graph_name="internet_search")
 
         if clean is None:
             continue
@@ -114,7 +114,7 @@ async def handle_resume(session_id: str, data: dict):
 # -------------------
 # WebSocket endpoint
 # -------------------
-@internet_search_router.websocket("/ws/system/{session_id}")
+@internet_search_router.websocket("/ws/internet-search/{session_id}")
 async def internet_research_ws(websocket: WebSocket, session_id: str):
     await ws_manager_graph.connect(session_id, websocket)
 

@@ -6,7 +6,7 @@ from tools.agent_tools import search_openalex
 
 
 async def openalex_structured(query: str):
-    raw = await search_openalex.ainvoke({"query": query})
+    raw = await search_openalex({"query": query})
     return json.loads(raw)
 
 

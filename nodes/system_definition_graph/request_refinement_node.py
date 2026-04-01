@@ -40,7 +40,6 @@ def request_refinement_node(state: SystemDefinitionState, llm):
 
     # 3. Detect if user wants to stop refinement
     if is_done_user_input(user_refinment_feedback["raw_user_input"]):
-
         return {
             "refinement_question": question,
             "user_refinment_feedback": user_refinment_feedback,

@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
 
+from registeries.graph_ws_serializers import GRAPH_WS_SERIALIZERS
 
-def normalize_graph_event(update):
+
+def normalize_graph_event(update, graph_name: str):
 
     if not update:
         return None
@@ -11,36 +13,17 @@ def normalize_graph_event(update):
 
         return {
             "type": "interrupt",
+            "graph": graph_name,
             "data": [{"id": i.id, "value": i.value} for i in interrupts],
         }
 
     # 2. Normal node output
     node_name, payload = next(iter(update.items()))
+    
+    # =========================
+    # GRAPH-SPECIFIC ROUTING
+    # =========================
+    handler = GRAPH_WS_SERIALIZERS.get(graph_name)
 
-    # 2. INTERPRETATION → show as message (NOT interrupt)
-    if node_name == "INTERPRET_SYSTEM_INPUT":
-        return {
-            "type": "message",
-            "node": node_name,
-            "data": payload.get("interpreted_input"),
-        }
-
-    # 2. INTERPRETATION → show as message (NOT interrupt)
-    if node_name == "UPDATE_SYSTEM_FUNCTIONS":
-        return {
-            "type": "data",  # ⚠️ better than "message" for structured data
-            "node": node_name,
-            "data": {
-                "system_description": payload.get("system_description"),
-                "system_functions": payload.get("system_functions"),
-                "assumptions": payload.get("assumptions"),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            },
-        }
-
-    # # 4. DEFAULT → raw node data
-    # return {
-    #     "type": "message",
-    #     "node": node_name,
-    #     "data": payload,
-    # }
+    if handler:
+        return handler(node_name, payload, graph_name)

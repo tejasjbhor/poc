@@ -11,6 +11,7 @@ class InternetSearchState(TypedDict):
 
     # --- query phase ---
     queries: List[str]
+    user_queries_refinment: Optional[str]
 
     # --- retrieval phase ---
     raw_results: Dict[str, Any]
