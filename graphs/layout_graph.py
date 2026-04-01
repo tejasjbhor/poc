@@ -1,116 +1,103 @@
 from langgraph.graph import StateGraph, START, END
 
 from helpers.log_node import log_node
-from nodes.layout_graph.collect_process_list_node import collect_process_list_node
-from nodes.layout_graph.dispatch_user_input_node import dispatch_user_input_node
-from nodes.layout_graph.finalize_node import finalize_node
-from nodes.layout_graph.ask_overall_surface_and_function_node import ask_overall_node
-from nodes.layout_graph.collect_layout_constraints import collect_constraints_node
-from nodes.layout_graph.conditional_routing_nodes import route_from_step
-from nodes.layout_graph.generate_layout import generate_layout_node
-from nodes.layout_graph.prepare_layout_summary import prepare_summary_node
-from nodes.layout_graph.refine_layout import refine_layout_node
-from nodes.layout_graph.request_layout_feedback import request_feedback_node
-from nodes.layout_graph.validate_process_list import validate_process_list_node
-from nodes.layout_graph.router_node import router_node
-from nodes.layout_graph.normalize_user_input_node import normalize_user_input_node
-from state.facility_layout_graph import FacilityState
+
+from nodes.layout_graph.collect_constraints_node import collect_constraints_node
+from nodes.layout_graph.generate_layout_node import generate_layout_node
+from nodes.layout_graph.normalize_input_node import normalize_input_node
+from nodes.layout_graph.collect_input_node import collect_input_node
+from nodes.layout_graph.review_layout_node import review_layout_node
+from state.facility_layout_graph import FacilityLayoutState
 from langgraph.checkpoint.memory import InMemorySaver
 
 
-def build_graph(llm):
-    builder = StateGraph(FacilityState)
+def build_facility_layout_graph(llm):
+    builder = StateGraph(FacilityLayoutState)
 
+    # =========================
     # Nodes
+    # =========================
+
     builder.add_node(
-        "normalize", log_node("normalize", lambda s: normalize_user_input_node(s, llm))
-    )
-    builder.add_node("router", log_node("router", lambda s: router_node(s, llm)))
-    builder.add_node(
-        "dispatch_input",
-        log_node("dispatch_input", lambda s: dispatch_user_input_node(s)),
+        "COLLECT_INPUT",
+        log_node(
+            "COLLECT_INPUT",
+            lambda s: collect_input_node(s),
+        ),
     )
 
     builder.add_node(
-        "ASK_OVERALL_SURFACE_AND_FUNCTION",
+        "NORMALIZE_INPUT",
         log_node(
-            "ASK_OVERALL_SURFACE_AND_FUNCTION", lambda s: ask_overall_node(s, llm)
+            "NORMALIZE_INPUT",
+            lambda s: normalize_input_node(s),
         ),
     )
+
     builder.add_node(
-        "COLLECT_PROCESS_LIST",
-        log_node("COLLECT_PROCESS_LIST", lambda s: collect_process_list_node(s, llm)),
-    )
-    builder.add_node(
-        "VALIDATE_PROCESS_LIST",
-        log_node("VALIDATE_PROCESS_LIST", lambda s: validate_process_list_node(s, llm)),
-    )
-    builder.add_node(
-        "COLLECT_LAYOUT_CONSTRAINTS",
+        "COLLECT_CONSTRAINTS",
         log_node(
-            "COLLECT_LAYOUT_CONSTRAINTS", lambda s: collect_constraints_node(s, llm)
+            "COLLECT_CONSTRAINTS",
+            lambda s: collect_constraints_node(s, llm),
         ),
     )
-    builder.add_node(
-        "PREPARE_LAYOUT_SUMMARY",
-        log_node("PREPARE_LAYOUT_SUMMARY", lambda s: prepare_summary_node(s, llm)),
-    )
+
     builder.add_node(
         "GENERATE_LAYOUT",
-        log_node("GENERATE_LAYOUT", lambda s: generate_layout_node(s, llm)),
-    )
-    builder.add_node(
-        "REQUEST_LAYOUT_FEEDBACK",
-        log_node("REQUEST_LAYOUT_FEEDBACK", lambda s: request_feedback_node(s, llm)),
-    )
-    builder.add_node(
-        "REFINE_LAYOUT", log_node("REFINE_LAYOUT", lambda s: refine_layout_node(s, llm))
-    )
-    builder.add_node(
-        "FINALIZE_APPROVED_LAYOUT",
-        log_node("FINALIZE_APPROVED_LAYOUT", lambda s: finalize_node(s, llm)),
+        log_node(
+            "GENERATE_LAYOUT",
+            lambda s: generate_layout_node(s, llm),
+        ),
     )
 
+    builder.add_node(
+        "REVIEW_LAYOUT",
+        log_node(
+            "REVIEW_LAYOUT",
+            lambda s: review_layout_node(s, llm),
+        ),
+    )
+
+    # =========================
+    # Entry
+    # =========================
+
+    builder.add_edge(START, "COLLECT_INPUT")
+
+    # =========================
     # Flow
-    builder.add_edge(START, "router")
+    # =========================
 
+    builder.add_edge("COLLECT_INPUT", "NORMALIZE_INPUT")
+
+    builder.add_edge("NORMALIZE_INPUT", "COLLECT_CONSTRAINTS")
+
+    builder.add_edge("GENERATE_LAYOUT", "REVIEW_LAYOUT")
+
+    # =========================
+    # Conditional routing (feedback loop)
+    # =========================
     builder.add_conditional_edges(
-        "router",
-        route_from_step,
+        "COLLECT_CONSTRAINTS",
+        lambda s: s["step"],
         {
-            "ASK_OVERALL_SURFACE_AND_FUNCTION": "ASK_OVERALL_SURFACE_AND_FUNCTION",
-            "COLLECT_PROCESS_LIST": "COLLECT_PROCESS_LIST",
-            "VALIDATE_PROCESS_LIST": "VALIDATE_PROCESS_LIST",
-            "COLLECT_LAYOUT_CONSTRAINTS": "COLLECT_LAYOUT_CONSTRAINTS",
-            "PREPARE_LAYOUT_SUMMARY": "PREPARE_LAYOUT_SUMMARY",
             "GENERATE_LAYOUT": "GENERATE_LAYOUT",
-            "REQUEST_LAYOUT_FEEDBACK": "REQUEST_LAYOUT_FEEDBACK",
-            "REFINE_LAYOUT": "REFINE_LAYOUT",
-            "FINALIZE_APPROVED_LAYOUT": "FINALIZE_APPROVED_LAYOUT",
+            "REFINE_CONSTRAINTS": "COLLECT_CONSTRAINTS",
         },
     )
 
-    # After user input → normalize → router again
-    for node in [
-        "ASK_OVERALL_SURFACE_AND_FUNCTION",
-        "COLLECT_PROCESS_LIST",
-        "COLLECT_LAYOUT_CONSTRAINTS",
-        "REQUEST_LAYOUT_FEEDBACK",
-    ]:
-        builder.add_edge(node, "normalize")
+    builder.add_conditional_edges(
+        "REVIEW_LAYOUT",
+        lambda s: s["step"],
+        {
+            "REFINE_LAYOUT": "GENERATE_LAYOUT",
+            "FINAL": END,
+        },
+    )
 
-    builder.add_edge("normalize", "router")
-
-    # Processing nodes → back to router
-    for node in [
-        "VALIDATE_PROCESS_LIST",
-        "PREPARE_LAYOUT_SUMMARY",
-        "GENERATE_LAYOUT",
-        "REFINE_LAYOUT",
-    ]:
-        builder.add_edge(node, "router")
-
-    builder.add_edge("FINALIZE_APPROVED_LAYOUT", END)
+    # =========================
+    # Compile
+    # =========================
 
     checkpointer = InMemorySaver()
 

@@ -25,7 +25,7 @@ def _handle_system_definition(node_name, payload, graph_name):
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             },
         }
-        
+
     # # 4. DEFAULT → raw node data
     # return {
     #     "type": "message",
@@ -87,10 +87,36 @@ def _handle_internet_search(node_name, payload, graph_name):
 
 def _handle_layout(node_name, payload, graph_name):
 
-    
-    return {
-        "type": "message",
-        "node": node_name,
-        "graph_name": graph_name,
-        "data": payload,
-    }
+    if node_name == "NORMALIZE_INPUT":
+        return {
+            "type": "data",
+            "node": node_name,
+            "graph_name": graph_name,
+            "data": {
+                "system_description": payload.get("system_description"),
+                "system_functions": payload.get("system_functions"),
+                "assumptions": payload.get("assumptions"),
+            },
+        }
+
+    if node_name == "GENERATE_LAYOUT":
+        return {
+            "type": "data",
+            "node": node_name,
+            "graph_name": graph_name,
+            "data": {
+                "layout": payload.get("layout"),
+                "facility_coordinates": payload.get("facility_coordinates"),
+                "layout_status": payload.get("layout_status", ""),
+                "total_area": payload.get("total_area"),
+                "layout_version": payload.get("layout_version"),
+            },
+        }
+
+    # fallback (safety)
+    # return {
+    #     "type": "data",
+    #     "node": node_name,
+    #     "graph_name": graph_name,
+    #     "data": payload,
+    # }

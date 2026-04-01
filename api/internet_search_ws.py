@@ -93,6 +93,7 @@ async def handle_resume(session_id: str, data: dict):
                 session_id,
                 {
                     "type": "finished",
+                    "graph_name": "internet_search",
                     "data": {
                         "system_understanding": state.get("system_understanding"),
                         "queries": state.get("queries"),

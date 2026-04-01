@@ -80,6 +80,7 @@ async def handle_resume(session_id: str, data: dict):
                 session_id,
                 {
                     "type": "finished",
+                    "graph_name": "system_definition",
                     "data": {
                         "system_description": state.get("system_description"),
                         "system_functions": state.get("system_functions"),

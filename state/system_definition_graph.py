@@ -37,7 +37,6 @@ class SystemDefinitionState(TypedDict):
 
     # Control flags
     step: str
-    last_step: Optional[str]
     validation_result: Optional[str]
 
     # optional: loop control

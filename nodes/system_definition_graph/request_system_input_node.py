@@ -3,7 +3,7 @@ from langchain.messages import HumanMessage
 from helpers.llm_safe_invoke import safe_llm_invoke
 from prompts.system_definition_prompts import SYSTEM_DEFINITION_PROMPTS
 from state.system_definition_graph import SystemDefinitionState
-from langgraph.types import interrupt, Interrupt
+from langgraph.types import interrupt
 
 
 def request_system_input_node(state: SystemDefinitionState, llm):

@@ -15,12 +15,12 @@ from nodes.layout_graph.request_layout_feedback import request_feedback_node
 from nodes.layout_graph.validate_process_list import validate_process_list_node
 from nodes.layout_graph.router_node import router_node
 from nodes.layout_graph.normalize_user_input_node import normalize_user_input_node
-from state.facility_layout_graph import FacilityState
+from state.facility_layout_graph import FacilityLayoutState
 from langgraph.checkpoint.memory import InMemorySaver
 
 
 def build_graph(llm):
-    builder = StateGraph(FacilityState)
+    builder = StateGraph(FacilityLayoutState)
 
     llm = get_chat_model()
     # Nodes
