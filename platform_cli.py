@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import sys
-from utils.config import get_settings
-
-from langchain_anthropic import ChatAnthropic
+from llm_config import get_chat_model
 from state.sa_state import get_state
 from utils.cmd_input_output import apply_feedback, send_message
 
@@ -94,15 +92,8 @@ def _print_watch_screen(payload: dict) -> None:
 
 async def chat_async() -> None:
 
-    cfg = get_settings()
-    llm = ChatAnthropic(
-        model=cfg.anthropic_model,
-        api_key=cfg.anthropic_api_key,
-        max_tokens=4096,
-        temperature=0.2,
-    )
 
-    graph = build_graph(llm, checkpointer=None)
+    graph = build_graph(get_chat_model(), checkpointer=None)
     session_id = _load_session_id() or str(uuid.uuid4())
     _save_session_id(session_id)
 

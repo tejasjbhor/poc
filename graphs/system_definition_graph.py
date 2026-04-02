@@ -62,8 +62,6 @@ def build_system_definition_graph(graph_name, llm):
     )
 
     builder.add_edge(START, "REQUEST_SYSTEM_INPUT")
-
-    builder.add_edge(START, "REQUEST_SYSTEM_INPUT")
     builder.add_edge("REQUEST_SYSTEM_INPUT", "INTERPRET_SYSTEM_INPUT")
     builder.add_edge("INTERPRET_SYSTEM_INPUT", "REQUEST_FUNCTION_REFINEMENT")
 

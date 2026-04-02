@@ -5,7 +5,6 @@ import importlib
 
 
 from registeries.graph_names import GRAPH_NAMES_REGISTERY
-from registeries.internet_search_unified_tool_registery import INTERNET_SEARCH_TOOLS
 
 AGENTS: dict[str, dict] = {
     "agent_1": {
