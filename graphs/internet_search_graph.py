@@ -20,7 +20,7 @@ from nodes.internet_search_graph.validate_system_input_node import (
 from state.internet_search_graph import InternetSearchState
 
 
-def build_internet_search_graph(llm, tools):
+def build_internet_search_graph(graph_name, llm, tools):
     builder = StateGraph(InternetSearchState)
 
     # =========================
@@ -30,6 +30,7 @@ def build_internet_search_graph(llm, tools):
     builder.add_node(
         "REQUEST_SYSTEM_INPUT",
         log_node(
+            graph_name,
             "REQUEST_SYSTEM_INPUT",
             lambda s: request_system_input_node(s, llm),
         ),
@@ -38,6 +39,7 @@ def build_internet_search_graph(llm, tools):
     builder.add_node(
         "INTERPRET_SYSTEM_INPUT",
         log_node(
+            graph_name,
             "INTERPRET_SYSTEM_INPUT",
             lambda s: interpret_system_input_node(s, llm),
         ),
@@ -46,6 +48,7 @@ def build_internet_search_graph(llm, tools):
     builder.add_node(
         "VALIDATE_SYSTEM_INPUT",
         log_node(
+            graph_name,
             "VALIDATE_SYSTEM_INPUT",
             lambda s: validate_system_input_node(s, llm),
         ),
@@ -54,6 +57,7 @@ def build_internet_search_graph(llm, tools):
     builder.add_node(
         "GENERATE_QUERIES",
         log_node(
+            graph_name,
             "GENERATE_QUERIES",
             lambda s: generate_queries_node(s, llm),
         ),
@@ -62,6 +66,7 @@ def build_internet_search_graph(llm, tools):
     builder.add_node(
         "VALIDATE_QUERIES",
         log_node(
+            graph_name,
             "VALIDATE_QUERIES",
             lambda s: validate_queries_node(s, llm),
         ),
@@ -73,6 +78,7 @@ def build_internet_search_graph(llm, tools):
     builder.add_node(
         "SEARCH_SOURCES",
         log_node(
+            graph_name,
             "SEARCH_SOURCES",
             search_sources_bound,
         ),
@@ -81,6 +87,7 @@ def build_internet_search_graph(llm, tools):
     builder.add_node(
         "EXTRACT_CANDIDATES",
         log_node(
+            graph_name,
             "EXTRACT_CANDIDATES",
             lambda s: extract_candidates_node(s, llm),
         ),
@@ -89,6 +96,7 @@ def build_internet_search_graph(llm, tools):
     builder.add_node(
         "RANK_CANDIDATES",
         log_node(
+            graph_name,
             "RANK_CANDIDATES",
             lambda s: rank_candidates_node(s, llm),
         ),
@@ -97,6 +105,7 @@ def build_internet_search_graph(llm, tools):
     builder.add_node(
         "FINAL_VALIDATION",
         log_node(
+            graph_name,
             "FINAL_VALIDATION",
             lambda s: final_validation_node(s, llm),
         ),

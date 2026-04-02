@@ -11,7 +11,7 @@ from state.facility_layout_graph import FacilityLayoutState
 from langgraph.checkpoint.memory import InMemorySaver
 
 
-def build_facility_layout_graph(llm):
+def build_facility_layout_graph(graph_name, llm):
     builder = StateGraph(FacilityLayoutState)
 
     # =========================
@@ -21,6 +21,7 @@ def build_facility_layout_graph(llm):
     builder.add_node(
         "COLLECT_INPUT",
         log_node(
+            graph_name,
             "COLLECT_INPUT",
             lambda s: collect_input_node(s),
         ),
@@ -29,6 +30,7 @@ def build_facility_layout_graph(llm):
     builder.add_node(
         "NORMALIZE_INPUT",
         log_node(
+            graph_name,
             "NORMALIZE_INPUT",
             lambda s: normalize_input_node(s),
         ),
@@ -37,6 +39,7 @@ def build_facility_layout_graph(llm):
     builder.add_node(
         "COLLECT_CONSTRAINTS",
         log_node(
+            graph_name,
             "COLLECT_CONSTRAINTS",
             lambda s: collect_constraints_node(s, llm),
         ),
@@ -45,6 +48,7 @@ def build_facility_layout_graph(llm):
     builder.add_node(
         "GENERATE_LAYOUT",
         log_node(
+            graph_name,
             "GENERATE_LAYOUT",
             lambda s: generate_layout_node(s, llm),
         ),
@@ -53,6 +57,7 @@ def build_facility_layout_graph(llm):
     builder.add_node(
         "REVIEW_LAYOUT",
         log_node(
+            graph_name,
             "REVIEW_LAYOUT",
             lambda s: review_layout_node(s, llm),
         ),

@@ -1,17 +1,6 @@
 from typing import List, TypedDict, Optional, Dict, Any
 
-class SystemFunctionInterface(TypedDict, total=False):
-    function_id: str
-    materials: List[str]
-
-class SystemFunction(TypedDict, total=False):
-    id: str
-    name: str
-    description: str
-    category: str
-    surface_area: float
-    interfaces_in: List[SystemFunctionInterface]
-    interfaces_out: List[SystemFunctionInterface]
+from schemas.system_schemas import SystemFunction
 
 
 class SystemDefinitionState(TypedDict):

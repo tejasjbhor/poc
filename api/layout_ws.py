@@ -10,6 +10,7 @@ from langgraph.types import Command
 
 from langchain_anthropic import ChatAnthropic
 from graphs.layout_graph import build_facility_layout_graph
+from registeries.graph_names import GRAPH_NAMES_REGISTERY
 from utils.config import get_settings
 from utils.serializers import normalize_graph_event
 
@@ -25,8 +26,10 @@ llm = ChatAnthropic(
     temperature=0.2,
 )
 
+_graph_name = GRAPH_NAMES_REGISTERY["layout"]
+
 # Build graph once
-graph = build_facility_layout_graph(llm)
+graph = build_facility_layout_graph(_graph_name, llm)
 
 
 async def start_layout_graph(session_id: str, data: dict):
@@ -39,7 +42,7 @@ async def start_layout_graph(session_id: str, data: dict):
         state,
         config={"configurable": {"thread_id": session_id}},
     ):
-        clean = normalize_graph_event(update, graph_name="layout")
+        clean = normalize_graph_event(update, graph_name=_graph_name)
 
         if clean is None:
             continue
@@ -99,7 +102,7 @@ async def handle_layout_resume(session_id: str, data: dict):
         # =========================
         # Normal event handling
         # =========================
-        clean = normalize_graph_event(update, graph_name="layout")
+        clean = normalize_graph_event(update, graph_name=_graph_name)
 
         if clean is None:
             continue

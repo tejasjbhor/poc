@@ -11,6 +11,8 @@ from langgraph.types import interrupt
 from langchain_core.messages import SystemMessage, HumanMessage
 import json
 
+from utils.json_utils import coerce_json
+
 
 def collect_constraints_node(state: FacilityLayoutState, llm):
     prompt = FACILITY_LAYOUT_PROMPTS["prompt_collect_layout_constraints"]
@@ -37,10 +39,15 @@ def collect_constraints_node(state: FacilityLayoutState, llm):
 
     user_refinment_feedback = interrupt(response.content)
 
+    try:
+        parsed_llm_interpretation = coerce_json(user_refinment_feedback)
+    except Exception:
+        parsed_llm_interpretation = {}
+
     # 3. Detect if user wants to stop refinement
     if is_done_user_input(user_refinment_feedback["raw_user_input"]):
         return {
-            "constraints": json.loads(response.content),
+            "constraints": parsed_llm_interpretation,
             "constraints_user_feedback": user_refinment_feedback["raw_user_input"]
             or "",
             "step": "GENERATE_LAYOUT",

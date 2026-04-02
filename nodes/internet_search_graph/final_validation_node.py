@@ -11,30 +11,32 @@ from prompts.internet_search_prompts import INTERNET_SEARCH_PROMPTS
 
 
 def final_validation_node(state: InternetSearchState, llm):
-    prompt = INTERNET_SEARCH_PROMPTS["prompt_final_validation"]
+    # prompt = INTERNET_SEARCH_PROMPTS["prompt_final_validation"]
 
-    question = safe_llm_invoke(
-        llm,
-        [
-            SystemMessage(content=prompt),
-            HumanMessage(
-                content=json.dumps(
-                    {
-                        "system_understanding": state.get("system_understanding"),
-                        "ranked_candidates": state.get("ranked_candidates"),
-                    }
-                )
-            ),
-        ],
-    ).content
+    # question = safe_llm_invoke(
+    #     llm,
+    #     [
+    #         SystemMessage(content=prompt),
+    #         HumanMessage(
+    #             content=json.dumps(
+    #                 {
+    #                     "system_understanding": state.get("system_understanding"),
+    #                     "ranked_candidates": state.get("ranked_candidates"),
+    #                 }
+    #             )
+    #         ),
+    #     ],
+    # ).content
 
-    user_action = interrupt(question)
+    # question = "Validate the ranked results, describe any modifications you wish to have, or type done to end the process."
 
-    if not is_done_user_input(user_action["raw_user_input"]):
-        return {
-            "ranked_candidates": user_action["raw_user_input"],
-            "step": "GENERATE_QUERIES",
-        }
+    # user_action = interrupt(question)
+    
+    # if not is_done_user_input(user_action["raw_user_input"]):
+    #     return {
+    #         "ranked_candidates": user_action["raw_user_input"],
+    #         "step": "GENERATE_QUERIES",
+    #     }
 
     return {
         "step": "FINAL",

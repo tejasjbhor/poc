@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from graphs.system_definition_graph import build_system_definition_graph
 from langchain_anthropic import ChatAnthropic
 
+from registeries.graph_names import GRAPH_NAMES_REGISTERY
 from utils.config import get_settings
 from api.ws_manager_graph import ws_manager_graph
 from utils.serializers import normalize_graph_event
@@ -26,10 +27,12 @@ llm = ChatAnthropic(
     temperature=0.2,
 )
 
+_graph_name = GRAPH_NAMES_REGISTERY["system_definition"]
+
 # -------------------
 # Build graph ONCE
 # -------------------
-graph = build_system_definition_graph(llm)
+graph = build_system_definition_graph(_graph_name, llm)
 
 
 # -------------------
@@ -46,7 +49,7 @@ async def start_graph(session_id: str, data: dict):
         state,
         config={"configurable": {"thread_id": session_id}},
     ):
-        clean = normalize_graph_event(update, graph_name="system_definition")
+        clean = normalize_graph_event(update, graph_name=_graph_name)
 
         if clean is None:
             continue
@@ -91,7 +94,7 @@ async def handle_resume(session_id: str, data: dict):
             )
             continue
 
-        clean = normalize_graph_event(update, graph_name="system_definition")
+        clean = normalize_graph_event(update, graph_name=_graph_name)
 
         if clean is None:
             continue

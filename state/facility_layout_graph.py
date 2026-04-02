@@ -1,54 +1,12 @@
-from typing import Optional, TypedDict, List, Literal, Dict, Tuple
+from typing import Optional, TypedDict, List
 
-
-class Interface(TypedDict):
-    function_id: str
-    materials: List[str]
-
-
-class SystemFunction(TypedDict):
-    id: str
-    name: str
-    description: str
-    surface_area: float
-
-    interfaces_in: List[Interface]
-    interfaces_out: List[Interface]
-
-
-class Coordinates(TypedDict):
-    x: float
-    y: float
-    width: float
-    height: float
-
-
-class LayoutConnection(TypedDict):
-    connected_component_id: str
-    direction: Literal["up", "down", "left", "right", "bidirectional"]
-    shared_materials: List[str]
-    connection_weight: float
-
-
-class LayoutNode(TypedDict):
-    id: str
-    function_name: str
-    surface_area: float
-
-    coordinates: Coordinates
-    connections: List[LayoutConnection]
-
-
-class LayoutRationale(TypedDict):
-    organizing_principle: str
-    major_adjacency_choices: List[str]
-    assumptions: List[str]
-    constraint_tradeoffs: List[str]
-
-
-class Constraints(TypedDict):
-    hard: List[str]
-    soft: List[str]
+from schemas.layout_schemas import (
+    Coordinates,
+    LayoutConstraints,
+    LayoutNode,
+    LayoutRationale,
+)
+from schemas.system_schemas import SystemFunction
 
 
 class FacilityLayoutState(TypedDict):
@@ -66,7 +24,7 @@ class FacilityLayoutState(TypedDict):
     # =========================
     # CONSTRAINTS (SIMPLIFIED)
     # =========================
-    constraints: Constraints
+    constraints: LayoutConstraints
 
     # =========================
     # INTERMEDIATE (optional but useful)

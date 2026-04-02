@@ -18,7 +18,7 @@ from state.system_definition_graph import SystemDefinitionState
 from langgraph.checkpoint.memory import InMemorySaver
 
 
-def build_system_definition_graph(llm):
+def build_system_definition_graph(graph_name, llm):
     builder = StateGraph(SystemDefinitionState)
 
     # =========================
@@ -28,6 +28,7 @@ def build_system_definition_graph(llm):
     builder.add_node(
         "REQUEST_SYSTEM_INPUT",
         log_node(
+            graph_name,
             "REQUEST_SYSTEM_INPUT",
             lambda s: request_system_input_node(s, llm),
         ),
@@ -36,6 +37,7 @@ def build_system_definition_graph(llm):
     builder.add_node(
         "INTERPRET_SYSTEM_INPUT",
         log_node(
+            graph_name,
             "INTERPRET_SYSTEM_INPUT",
             lambda s: interpret_system_input_node(s, llm),
         ),
@@ -44,6 +46,7 @@ def build_system_definition_graph(llm):
     builder.add_node(
         "REQUEST_FUNCTION_REFINEMENT",
         log_node(
+            graph_name,
             "REQUEST_FUNCTION_REFINEMENT",
             lambda s: request_refinement_node(s, llm),
         ),
@@ -52,6 +55,7 @@ def build_system_definition_graph(llm):
     builder.add_node(
         "UPDATE_SYSTEM_FUNCTIONS",
         log_node(
+            graph_name,
             "UPDATE_SYSTEM_FUNCTIONS",
             lambda s: update_system_functions_node(s, llm),
         ),
