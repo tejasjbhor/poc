@@ -39,7 +39,6 @@ def generate_layout_node(state: FacilityLayoutState, llm):
     except Exception:
         parsed = {}
 
-    print(parsed)
     # -------------------------
     # State update (single source of truth)
     # -------------------------
