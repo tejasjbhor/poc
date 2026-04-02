@@ -1,4 +1,4 @@
-from agent_registry import get_all_agent_ids, get_default_active_agent_id
+from registeries.agent_registry import get_all_agent_ids, get_default_active_agent_id
 from state.sa_state import PlatformState
 import structlog
 

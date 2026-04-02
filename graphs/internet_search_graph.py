@@ -17,10 +17,13 @@ from nodes.internet_search_graph.validate_queries_node import validate_queries_n
 from nodes.internet_search_graph.validate_system_input_node import (
     validate_system_input_node,
 )
+from registeries.internet_search_unified_tool_registery import INTERNET_SEARCH_TOOLS
 from state.internet_search_graph import InternetSearchState
 
+tools = INTERNET_SEARCH_TOOLS
 
-def build_internet_search_graph(graph_name, llm, tools):
+
+def build_internet_search_graph(graph_name, llm):
     builder = StateGraph(InternetSearchState)
 
     # =========================

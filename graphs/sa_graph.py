@@ -9,10 +9,10 @@ from typing import Any
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from agent_registry import (
+from registeries.agent_registry import (
     get_all_agent_ids,
     get_default_active_agent_id,
-    get_node_fn,
+    resolve_callable,
 )
 from nodes.sa_graph.sa_router_node import sa_router_node
 from nodes.sa_graph.sa_user_input_node import sa_user_input_node
@@ -22,7 +22,7 @@ from state.sa_state import GraphState
 logger = logging.getLogger(__name__)
 
 
-def build_graph(checkpointer: Any | None = None) -> CompiledStateGraph:
+def build_graph(llm, checkpointer: Any | None = None) -> CompiledStateGraph:
     if checkpointer is None:
         from langgraph.checkpoint.memory import MemorySaver
 
@@ -36,7 +36,7 @@ def build_graph(checkpointer: Any | None = None) -> CompiledStateGraph:
 
     all_agent_ids = get_all_agent_ids()
     for agent_id in all_agent_ids:
-        node_fn = get_node_fn(agent_id)
+        node_fn = resolve_callable(agent_id, llm)
         builder.add_node(agent_id, node_fn)
         logger.info("Graph: registered node '%s'", agent_id)
 

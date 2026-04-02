@@ -1,4 +1,4 @@
-from agent_registry import get_default_agent_states
+from registeries.agent_registry import get_default_agent_states
 from state.sa_state import PlatformState
 
 

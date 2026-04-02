@@ -8,28 +8,19 @@ import asyncio
 from api.ws_manager_graph import ws_manager_graph
 from langgraph.types import Command
 
-from langchain_anthropic import ChatAnthropic
 from graphs.layout_graph import build_facility_layout_graph
+from llm_config import get_chat_model
 from registeries.graph_names import GRAPH_NAMES_REGISTERY
-from utils.config import get_settings
 from utils.serializers import normalize_graph_event
 
 
 layout_router = APIRouter()
 
-# Settings
-cfg = get_settings()
-llm = ChatAnthropic(
-    model=cfg.anthropic_model,
-    api_key=cfg.anthropic_api_key,
-    max_tokens=4096,
-    temperature=0.2,
-)
 
 _graph_name = GRAPH_NAMES_REGISTERY["layout"]
 
 # Build graph once
-graph = build_facility_layout_graph(_graph_name, llm)
+graph = build_facility_layout_graph(_graph_name, get_chat_model())
 
 
 async def start_layout_graph(session_id: str, data: dict):

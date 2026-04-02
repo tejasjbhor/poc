@@ -1,10 +1,14 @@
 """CLI: chat and watch (.platform_snapshot.json). Commands: /help /new /quit."""
+
 from __future__ import annotations
 
 import sys
+from utils.config import get_settings
 
+from langchain_anthropic import ChatAnthropic
 from state.sa_state import get_state
 from utils.cmd_input_output import apply_feedback, send_message
+
 print("RUNNING FROM:", sys.executable)
 import argparse
 import asyncio
@@ -89,7 +93,16 @@ def _print_watch_screen(payload: dict) -> None:
 
 
 async def chat_async() -> None:
-    graph = build_graph(checkpointer=None)
+
+    cfg = get_settings()
+    llm = ChatAnthropic(
+        model=cfg.anthropic_model,
+        api_key=cfg.anthropic_api_key,
+        max_tokens=4096,
+        temperature=0.2,
+    )
+
+    graph = build_graph(llm, checkpointer=None)
     session_id = _load_session_id() or str(uuid.uuid4())
     _save_session_id(session_id)
 
@@ -132,7 +145,9 @@ async def chat_async() -> None:
                 _save_session_id(session_id)
                 print("New session:", session_id)
                 _SNAPSHOT.write_text(
-                    json.dumps(_empty_sa_payload(session_id), indent=2, ensure_ascii=False),
+                    json.dumps(
+                        _empty_sa_payload(session_id), indent=2, ensure_ascii=False
+                    ),
                     encoding="utf-8",
                 )
                 continue
@@ -158,14 +173,20 @@ async def chat_async() -> None:
             print(card.get("body", ""))
             ans = await loop.run_in_executor(
                 None,
-                lambda: input("Card: type proceed / decline / Enter skip: ").strip().lower(),
+                lambda: input("Card: type proceed / decline / Enter skip: ")
+                .strip()
+                .lower(),
             )
             if ans in ("proceed", "p"):
-                await apply_feedback(graph, session_id, "proceed", card.get("suggestion_id"))
+                await apply_feedback(
+                    graph, session_id, "proceed", card.get("suggestion_id")
+                )
                 final_state = await get_state(graph, session_id)
                 _write_sa_snapshot(session_id, final_state)
             elif ans in ("decline", "d"):
-                await apply_feedback(graph, session_id, "decline", card.get("suggestion_id"))
+                await apply_feedback(
+                    graph, session_id, "decline", card.get("suggestion_id")
+                )
                 final_state = await get_state(graph, session_id)
                 _write_sa_snapshot(session_id, final_state)
 
@@ -196,7 +217,9 @@ def main() -> None:
     p = argparse.ArgumentParser(description="Super Agent")
     sub = p.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("chat", help="Chat with agent_1 + SA observer; watch for SA snapshot")
+    sub.add_parser(
+        "chat", help="Chat with agent_1 + SA observer; watch for SA snapshot"
+    )
     w = sub.add_parser("watch", help="Poll .platform_snapshot.json")
     w.add_argument("-i", "--interval", type=float, default=0.5)
 

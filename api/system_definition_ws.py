@@ -6,33 +6,21 @@ from langgraph.types import Command
 from datetime import datetime, timezone
 
 from graphs.system_definition_graph import build_system_definition_graph
-from langchain_anthropic import ChatAnthropic
 
+from llm_config import get_chat_model
 from registeries.graph_names import GRAPH_NAMES_REGISTERY
-from utils.config import get_settings
 from api.ws_manager_graph import ws_manager_graph
 from utils.serializers import normalize_graph_event
 
 
 system_definition_router = APIRouter()
-# -------------------
-# LLM setup
-# -------------------
-cfg = get_settings()
-
-llm = ChatAnthropic(
-    model=cfg.anthropic_model,
-    api_key=cfg.anthropic_api_key,
-    max_tokens=4096,
-    temperature=0.2,
-)
 
 _graph_name = GRAPH_NAMES_REGISTERY["system_definition"]
 
 # -------------------
 # Build graph ONCE
 # -------------------
-graph = build_system_definition_graph(_graph_name, llm)
+graph = build_system_definition_graph(_graph_name, get_chat_model())
 
 
 # -------------------
