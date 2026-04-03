@@ -6,7 +6,7 @@ from state.internet_search_graph import InternetSearchState
 tools = INTERNET_SEARCH_TOOLS
 
 
-async def search_sources_node(state: InternetSearchState):
+async def search_sources_node(state: InternetSearchState, config):
     queries = state.get("queries", [])
 
     raw_results = {

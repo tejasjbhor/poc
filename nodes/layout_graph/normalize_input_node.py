@@ -3,7 +3,7 @@ import json
 from state.facility_layout_graph import FacilityLayoutState
 
 
-def normalize_input_node(state: FacilityLayoutState):
+def normalize_input_node(state: FacilityLayoutState, config):
 
     raw = state["raw_user_input"]
 

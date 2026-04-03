@@ -6,7 +6,7 @@ from prompts.internet_search_prompts import INTERNET_SEARCH_PROMPTS
 from utils.json_utils import coerce_json
 
 
-def interpret_system_input_node(state: InternetSearchState, llm):
+def interpret_system_input_node(state: InternetSearchState, config, llm):
     prompt = INTERNET_SEARCH_PROMPTS["prompt_interpret_system_input"]
 
     response = safe_llm_invoke(

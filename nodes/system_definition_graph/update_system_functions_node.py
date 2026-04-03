@@ -8,7 +8,7 @@ from state.system_definition_graph import SystemDefinitionState
 from utils.json_utils import coerce_json
 
 
-def update_system_functions_node(state: SystemDefinitionState, llm):
+def update_system_functions_node(state: SystemDefinitionState, config, llm):
     prompt = SYSTEM_DEFINITION_PROMPTS["prompt_update_system_functions"]
 
     response = safe_llm_invoke(

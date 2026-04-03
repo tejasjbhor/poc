@@ -1,3 +1,5 @@
+from functools import partial
+
 from langgraph.graph import StateGraph, START, END
 
 from helpers.log_node import log_node
@@ -23,7 +25,7 @@ def build_facility_layout_graph(graph_name, llm):
         log_node(
             graph_name,
             "COLLECT_INPUT",
-            lambda s: collect_input_node(s),
+            partial(collect_input_node),
         ),
     )
 
@@ -32,7 +34,7 @@ def build_facility_layout_graph(graph_name, llm):
         log_node(
             graph_name,
             "NORMALIZE_INPUT",
-            lambda s: normalize_input_node(s),
+            partial(normalize_input_node),
         ),
     )
 
@@ -41,7 +43,7 @@ def build_facility_layout_graph(graph_name, llm):
         log_node(
             graph_name,
             "COLLECT_CONSTRAINTS",
-            lambda s: collect_constraints_node(s, llm),
+            partial(collect_constraints_node, llm=llm),
         ),
     )
 
@@ -50,7 +52,7 @@ def build_facility_layout_graph(graph_name, llm):
         log_node(
             graph_name,
             "GENERATE_LAYOUT",
-            lambda s: generate_layout_node(s, llm),
+            partial(generate_layout_node, llm=llm),
         ),
     )
 
@@ -59,7 +61,7 @@ def build_facility_layout_graph(graph_name, llm):
         log_node(
             graph_name,
             "REVIEW_LAYOUT",
-            lambda s: review_layout_node(s, llm),
+            partial(review_layout_node, llm=llm),
         ),
     )
 

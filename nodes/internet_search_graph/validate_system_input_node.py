@@ -9,7 +9,7 @@ from state.internet_search_graph import InternetSearchState
 from prompts.internet_search_prompts import INTERNET_SEARCH_PROMPTS
 
 
-def validate_system_input_node(state: InternetSearchState, llm):
+def validate_system_input_node(state: InternetSearchState, config, llm):
     prompt = INTERNET_SEARCH_PROMPTS["prompt_validate_system_input"]
 
     system_understanding = state.get("system_understanding")

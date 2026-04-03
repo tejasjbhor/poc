@@ -1,4 +1,5 @@
 from langgraph.graph import StateGraph, START, END
+from functools import partial
 
 from helpers.log_node import log_node
 
@@ -30,7 +31,7 @@ def build_system_definition_graph(graph_name, llm):
         log_node(
             graph_name,
             "REQUEST_SYSTEM_INPUT",
-            lambda s: request_system_input_node(s, llm),
+            partial(request_system_input_node, llm=llm),
         ),
     )
 
@@ -39,7 +40,7 @@ def build_system_definition_graph(graph_name, llm):
         log_node(
             graph_name,
             "INTERPRET_SYSTEM_INPUT",
-            lambda s: interpret_system_input_node(s, llm),
+            partial(interpret_system_input_node, llm=llm),
         ),
     )
 
@@ -48,7 +49,7 @@ def build_system_definition_graph(graph_name, llm):
         log_node(
             graph_name,
             "REQUEST_FUNCTION_REFINEMENT",
-            lambda s: request_refinement_node(s, llm),
+            partial(request_refinement_node, llm=llm),
         ),
     )
 
@@ -57,7 +58,7 @@ def build_system_definition_graph(graph_name, llm):
         log_node(
             graph_name,
             "UPDATE_SYSTEM_FUNCTIONS",
-            lambda s: update_system_functions_node(s, llm),
+            partial(update_system_functions_node, llm=llm),
         ),
     )
 

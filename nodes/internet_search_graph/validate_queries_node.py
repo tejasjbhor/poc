@@ -7,7 +7,7 @@ from state.internet_search_graph import InternetSearchState
 from prompts.internet_search_prompts import INTERNET_SEARCH_PROMPTS
 
 
-def validate_queries_node(state: InternetSearchState, llm):
+def validate_queries_node(state: InternetSearchState, config, llm):
     question = "Please validate the generated queries. You may add or remove by resquesting in the chat, if not, type done to proceed."
 
     user_action = interrupt(question)

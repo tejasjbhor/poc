@@ -2,7 +2,7 @@ from state.overall_observer_graph import OverallObserverState
 from langgraph.types import interrupt
 
 
-def routing_decider_node(state: OverallObserverState, llm):
+def routing_decider_node(state: OverallObserverState, config, llm):
 
     question = """**Hey! 👋**
 

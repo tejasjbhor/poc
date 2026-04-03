@@ -3,7 +3,7 @@ from state.facility_layout_graph import FacilityLayoutState
 from langgraph.types import interrupt
 
 
-def review_layout_node(state: FacilityLayoutState, llm):
+def review_layout_node(state: FacilityLayoutState, config, llm):
     question = "Please review carefully the proposed layout, and give your feedback. If all is good, type done."
 
     layout_user_feedback = interrupt(question)

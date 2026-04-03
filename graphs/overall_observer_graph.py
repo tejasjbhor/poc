@@ -1,3 +1,5 @@
+from functools import partial
+
 from langgraph.graph import StateGraph, START, END
 
 from helpers.log_node import log_node
@@ -16,7 +18,7 @@ def build_overall_observer_graph(graph_name, llm):
         log_node(
             graph_name,
             "DECIDE_ROUTE",
-            lambda s: routing_decider_node(s, llm),
+            partial(routing_decider_node, llm=llm),
         ),
     )
 

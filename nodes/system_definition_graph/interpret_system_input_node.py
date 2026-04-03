@@ -8,7 +8,7 @@ from state.system_definition_graph import SystemDefinitionState
 from utils.json_utils import coerce_json
 
 
-def interpret_system_input_node(state: SystemDefinitionState, llm):
+def interpret_system_input_node(state: SystemDefinitionState, config, llm):
     prompt = SYSTEM_DEFINITION_PROMPTS["prompt_interpret_system_input"]
 
     raw_input = state.get("first_user_description")

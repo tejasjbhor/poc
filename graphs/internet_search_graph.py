@@ -1,3 +1,5 @@
+from functools import partial
+
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import InMemorySaver
 
@@ -32,7 +34,7 @@ def build_internet_search_graph(graph_name, llm):
         log_node(
             graph_name,
             "REQUEST_SYSTEM_INPUT",
-            lambda s: request_system_input_node(s, llm),
+            partial(request_system_input_node, llm=llm),
         ),
     )
 
@@ -41,7 +43,7 @@ def build_internet_search_graph(graph_name, llm):
         log_node(
             graph_name,
             "INTERPRET_SYSTEM_INPUT",
-            lambda s: interpret_system_input_node(s, llm),
+            partial(interpret_system_input_node, llm=llm),
         ),
     )
 
@@ -50,30 +52,26 @@ def build_internet_search_graph(graph_name, llm):
         log_node(
             graph_name,
             "VALIDATE_SYSTEM_INPUT",
-            lambda s: validate_system_input_node(s, llm),
+            partial(validate_system_input_node, llm=llm),
         ),
     )
 
     builder.add_node(
         "GENERATE_QUERIES",
         log_node(
-            graph_name,
-            "GENERATE_QUERIES",
-            lambda s: generate_queries_node(s, llm),
+            graph_name, "GENERATE_QUERIES", partial(generate_queries_node, llm=llm)
         ),
     )
 
     builder.add_node(
         "VALIDATE_QUERIES",
         log_node(
-            graph_name,
-            "VALIDATE_QUERIES",
-            lambda s: validate_queries_node(s, llm),
+            graph_name, "VALIDATE_QUERIES", partial(validate_queries_node, llm=llm)
         ),
     )
 
     async def search_sources_bound(state, config):
-        return await search_sources_node(state)
+        return await search_sources_node(state, config)
 
     builder.add_node(
         "SEARCH_SOURCES",
@@ -87,27 +85,19 @@ def build_internet_search_graph(graph_name, llm):
     builder.add_node(
         "EXTRACT_CANDIDATES",
         log_node(
-            graph_name,
-            "EXTRACT_CANDIDATES",
-            lambda s: extract_candidates_node(s, llm),
+            graph_name, "EXTRACT_CANDIDATES", partial(extract_candidates_node, llm=llm)
         ),
     )
 
     builder.add_node(
         "RANK_CANDIDATES",
-        log_node(
-            graph_name,
-            "RANK_CANDIDATES",
-            lambda s: rank_candidates_node(s, llm),
-        ),
+        log_node(graph_name, "RANK_CANDIDATES", partial(rank_candidates_node, llm=llm)),
     )
 
     builder.add_node(
         "FINAL_VALIDATION",
         log_node(
-            graph_name,
-            "FINAL_VALIDATION",
-            lambda s: final_validation_node(s, llm),
+            graph_name, "FINAL_VALIDATION", partial(final_validation_node, llm=llm)
         ),
     )
 

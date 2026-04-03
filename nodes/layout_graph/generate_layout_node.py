@@ -14,7 +14,7 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from utils.json_utils import coerce_json
 
 
-def generate_layout_node(state: FacilityLayoutState, llm):
+def generate_layout_node(state: FacilityLayoutState, config, llm):
     prompt = FACILITY_LAYOUT_PROMPTS["prompt_generate_layout"]
 
     payload = {

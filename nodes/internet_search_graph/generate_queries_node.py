@@ -8,7 +8,7 @@ from prompts.internet_search_prompts import INTERNET_SEARCH_PROMPTS
 from utils.json_utils import coerce_json
 
 
-def generate_queries_node(state: InternetSearchState, llm):
+def generate_queries_node(state: InternetSearchState, config, llm):
     prompt = INTERNET_SEARCH_PROMPTS["prompt_generate_queries"]
 
     response = safe_llm_invoke(

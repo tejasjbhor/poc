@@ -6,7 +6,7 @@ from state.system_definition_graph import SystemDefinitionState
 from langgraph.types import interrupt
 
 
-def request_system_input_node(state: SystemDefinitionState, llm):
+def request_system_input_node(state: SystemDefinitionState, config, llm):
     prompt = SYSTEM_DEFINITION_PROMPTS["prompt_request_system_input"]
 
     if "question" not in state:

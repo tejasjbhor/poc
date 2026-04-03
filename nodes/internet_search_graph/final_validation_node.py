@@ -10,7 +10,7 @@ from state.internet_search_graph import InternetSearchState
 from prompts.internet_search_prompts import INTERNET_SEARCH_PROMPTS
 
 
-def final_validation_node(state: InternetSearchState, llm):
+def final_validation_node(state: InternetSearchState, config, llm):
     # prompt = INTERNET_SEARCH_PROMPTS["prompt_final_validation"]
 
     # question = safe_llm_invoke(

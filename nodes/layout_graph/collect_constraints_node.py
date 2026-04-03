@@ -14,7 +14,7 @@ import json
 from utils.json_utils import coerce_json
 
 
-def collect_constraints_node(state: FacilityLayoutState, llm):
+def collect_constraints_node(state: FacilityLayoutState, config, llm):
     prompt = FACILITY_LAYOUT_PROMPTS["prompt_collect_layout_constraints"]
 
     response = safe_llm_invoke(

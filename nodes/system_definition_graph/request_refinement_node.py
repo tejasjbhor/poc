@@ -10,7 +10,7 @@ from state.system_definition_graph import SystemDefinitionState
 from langgraph.types import interrupt
 
 
-def request_refinement_node(state: SystemDefinitionState, llm):
+def request_refinement_node(state: SystemDefinitionState, config, llm):
     # 1. Avoid recomputation on resume
     if "refinement_question" not in state:
         prompt = SYSTEM_DEFINITION_PROMPTS["prompt_request_function_refinement"]
