@@ -5,9 +5,9 @@ def log_node(graph_name, name, fn):
 
     if inspect.iscoroutinefunction(fn):
 
-        async def async_wrapper(state):
+        async def async_wrapper(state, config):
             print(f"[NODE START] {graph_name}/{name}")
-            result = await fn(state)
+            result = await fn(state, config)
             print(f"[NODE END] {graph_name}/{name}")
             return result
 
@@ -15,7 +15,7 @@ def log_node(graph_name, name, fn):
 
     else:
 
-        def sync_wrapper(state):
+        def sync_wrapper(state, config):
             print(f"[NODE START] {graph_name}/{name}")
             result = fn(state)
             print(f"[NODE END] {graph_name}/{name}")

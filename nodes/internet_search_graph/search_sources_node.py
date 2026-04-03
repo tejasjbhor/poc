@@ -1,10 +1,12 @@
 import asyncio
-import traceback
 
+from registeries.internet_search_unified_tool_registery import INTERNET_SEARCH_TOOLS
 from state.internet_search_graph import InternetSearchState
 
+tools = INTERNET_SEARCH_TOOLS
 
-async def search_sources_node(state: InternetSearchState, tools):
+
+async def search_sources_node(state: InternetSearchState):
     queries = state.get("queries", [])
 
     raw_results = {
@@ -20,7 +22,6 @@ async def search_sources_node(state: InternetSearchState, tools):
     queries = queries[:6]
 
     import traceback
-
 
     async def run_tool(tool_name: str, tool, query: str):
         try:

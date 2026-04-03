@@ -10,7 +10,7 @@ from langgraph.types import Command
 
 from graphs.layout_graph import build_facility_layout_graph
 from llm_config import get_chat_model
-from registeries.graph_names import GRAPH_NAMES_REGISTERY
+from registeries.graph_registery import GRAPH_NAMES_REGISTERY
 from utils.serializers import normalize_graph_event
 
 
@@ -28,12 +28,18 @@ async def start_layout_graph(session_id: str, data: dict):
     state = {
         "step": "REQUEST_LAYOUT_INPUT",
     }
+    config = {
+        "configurable": {
+            "thread_id": session_id,
+            "graph_name": _graph_name,
+        }
+    }
 
     async for update in graph.astream(
         state,
-        config={"configurable": {"thread_id": session_id}},
+        config=config,
     ):
-        clean = normalize_graph_event(update, graph_name=_graph_name)
+        clean = normalize_graph_event(update, config)
 
         if clean is None:
             continue
@@ -44,12 +50,18 @@ async def start_layout_graph(session_id: str, data: dict):
 async def handle_layout_resume(session_id: str, data: dict):
     interrupt_id = data.get("interrupt_id")
     value = data.get("value")
+    config = {
+        "configurable": {
+            "thread_id": session_id,
+            "graph_name": _graph_name,
+        }
+    }
 
     async for update in graph.astream(
         Command(
             resume={"interrupt_id": interrupt_id, "raw_user_input": value},
         ),
-        config={"configurable": {"thread_id": session_id}},
+        config=config,
     ):
         # =========================
         # Extract step
@@ -64,16 +76,14 @@ async def handle_layout_resume(session_id: str, data: dict):
         # Finalization handling
         # =========================
         if step == "FINAL":
-            snapshot = await graph.aget_state(
-                config={"configurable": {"thread_id": session_id}}
-            )
+            snapshot = await graph.aget_state(config=config)
             state = snapshot.values
 
             await ws_manager_graph.send(
                 session_id,
                 {
                     "type": "finished",
-                    "graph_name": "layout",
+                    "graph_name": config["configurable"]["graph_name"],
                     "data": {
                         "system_description": state.get("system_description", ""),
                         "system_functions": state.get("system_functions", []),
@@ -93,7 +103,7 @@ async def handle_layout_resume(session_id: str, data: dict):
         # =========================
         # Normal event handling
         # =========================
-        clean = normalize_graph_event(update, graph_name=_graph_name)
+        clean = normalize_graph_event(update, config)
 
         if clean is None:
             continue

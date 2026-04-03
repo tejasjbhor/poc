@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from graphs.internet_search_graph import build_internet_search_graph
 
 from llm_config import get_chat_model
-from registeries.graph_names import GRAPH_NAMES_REGISTERY
+from registeries.graph_registery import GRAPH_NAMES_REGISTERY
 from api.ws_manager_graph import ws_manager_graph
 from utils.serializers import normalize_graph_event
 
@@ -34,11 +34,18 @@ async def start_graph(session_id: str, data: dict):
         "step": "REQUEST_SYSTEM_INPUT",
     }
 
+    config = {
+        "configurable": {
+            "thread_id": session_id,
+            "graph_name": _graph_name,
+        }
+    }
+
     async for update in graph.astream(
         state,
-        config={"configurable": {"thread_id": session_id}},
+        config=config,
     ):
-        clean = normalize_graph_event(update, graph_name=_graph_name)
+        clean = normalize_graph_event(update, config)
 
         if clean is None:
             continue
@@ -53,6 +60,13 @@ async def handle_resume(session_id: str, data: dict):
     interrupt_id = data.get("interrupt_id")
     value = data.get("value")
 
+    config = {
+        "configurable": {
+            "thread_id": session_id,
+            "graph_name": _graph_name,
+        }
+    }
+
     async for update in graph.astream(
         Command(
             resume={
@@ -60,7 +74,7 @@ async def handle_resume(session_id: str, data: dict):
                 "raw_user_input": value,
             },
         ),
-        config={"configurable": {"thread_id": session_id}},
+        config=config,
     ):
         # 🔍 detect step
         if "__interrupt__" in update:
@@ -73,16 +87,14 @@ async def handle_resume(session_id: str, data: dict):
         # FINAL OUTPUT
         # =========================
         if step == "FINAL":
-            snapshot = await graph.aget_state(
-                config={"configurable": {"thread_id": session_id}}
-            )
+            snapshot = await graph.aget_state(config=config)
             state = snapshot.values
 
             await ws_manager_graph.send(
                 session_id,
                 {
                     "type": "finished",
-                    "graph_name": "internet_search",
+                    "graph_name": config["configurable"]["graph_name"],
                     "data": {
                         "system_understanding": state.get("system_understanding"),
                         "queries": state.get("queries"),
@@ -93,7 +105,7 @@ async def handle_resume(session_id: str, data: dict):
             )
             continue
 
-        clean = normalize_graph_event(update, graph_name=_graph_name)
+        clean = normalize_graph_event(update, config)
 
         if clean is None:
             continue

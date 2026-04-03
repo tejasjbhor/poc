@@ -4,19 +4,11 @@ from __future__ import annotations
 import importlib
 
 
-from registeries.graph_names import GRAPH_NAMES_REGISTERY
+from registeries.graph_registery import GRAPH_NAMES_REGISTERY
 
 AGENTS: dict[str, dict] = {
-    "agent_1": {
-        "display_name": "Agent 1",
-        "node_fn": "nodes.sa_graph.agent_1_node.agent_1_node",
-        "type": "node",
-        "default_phase": "phase_1_needs",
-        "runs_at_start": False,
-        "description": "Structured requirements",
-    },
     "system_definition": {
-        "display_name": "layout_agent",
+        "display_name": "System Definition",
         "node_fn": "graphs.system_definition_graph.build_system_definition_graph",
         "type": "graph",
         "default_phase": "phase_layout",
@@ -28,7 +20,7 @@ AGENTS: dict[str, dict] = {
         "node_fn": "graphs.internet_search_graph.build_internet_search_graph",
         "type": "graph",
         "default_phase": "phase_layout",
-        "runs_at_start": True,
+        "runs_at_start": False,
         "description": "Searching the internet for a particular system.",
     },
     "layout": {
@@ -76,14 +68,23 @@ def resolve_callable(agent_id: str, llm):
     fn = load_callable(entry["node_fn"])
 
     if entry.get("type") == "graph":
-        # build once
-        graph = fn(GRAPH_NAMES_REGISTERY[agent_id], llm)
 
         async def wrapper(state, config):
-            last = None
-            async for chunk in graph.astream(state, config=config):
-                last = chunk
-            return last
+            enriched_config = dict(config or {})
+            enriched_config.setdefault("configurable", {})
+            enriched_config["configurable"] = {
+                **enriched_config["configurable"],
+                "graph_name": GRAPH_NAMES_REGISTERY[agent_id],
+            }
+
+            # build once
+            graph = fn(GRAPH_NAMES_REGISTERY[agent_id], llm)
+
+            results = []
+            async for chunk in graph.astream(state, config=enriched_config):
+                results.append(chunk)
+
+            return results[-1] if results else state
 
         return wrapper
 

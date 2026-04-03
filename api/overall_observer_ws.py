@@ -5,6 +5,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from langgraph.types import Command
 from datetime import datetime, timezone
 
+from graphs.overall_observer_graph import build_overall_observer_graph
 from graphs.system_definition_graph import build_system_definition_graph
 
 from llm_config import get_chat_model
@@ -13,14 +14,14 @@ from api.ws_manager_graph import ws_manager_graph
 from utils.serializers import normalize_graph_event
 
 
-system_definition_router = APIRouter()
+overall_observer_router = APIRouter()
 
-_graph_name = GRAPH_NAMES_REGISTERY["system_definition"]
+_graph_name = GRAPH_NAMES_REGISTERY["overall_observer"]
 
 # -------------------
 # Build graph ONCE
 # -------------------
-graph = build_system_definition_graph(_graph_name, get_chat_model())
+graph = build_overall_observer_graph(_graph_name, get_chat_model())
 
 
 # -------------------
@@ -29,20 +30,24 @@ graph = build_system_definition_graph(_graph_name, get_chat_model())
 async def start_graph(session_id: str, data: dict):
 
     state = {
-        "step": "REQUEST_SYSTEM_INPUT",
+        # "step": "DECIDE_ROUTE",
         # "raw_user_input": data.get("payload"),
     }
+
     config = {
         "configurable": {
             "thread_id": session_id,
             "graph_name": _graph_name,
         }
     }
+
     async for update in graph.astream(
         state,
         config=config,
+        subgraphs=True,
+        version="v2",
     ):
-        clean = normalize_graph_event(update, config)
+        clean = normalize_graph_event(update["data"], config)
 
         if clean is None:
             continue
@@ -64,13 +69,15 @@ async def handle_resume(session_id: str, data: dict):
             resume={"interrupt_id": interrupt_id, "raw_user_input": value},
         ),
         config=config,
+        subgraphs=True,
+        version="v2",
     ):
         # TODO Not a clean solution, to be improved
-        if "__interrupt__" in update:
+        if "__interrupt__" in update["data"]:
             step = None
         else:
-            node_name, payload = next(iter(update.items()))  # 👈 step 1
-            step = payload.get("step")  # 👈 step 2
+            node_name, payload = next(iter(update["data"].items()))  # 👈 step 1
+            step = payload.get("data")  # 👈 step 2
 
         if step == "FINAL":
             snapshot = await graph.aget_state(config=config)
@@ -81,16 +88,13 @@ async def handle_resume(session_id: str, data: dict):
                     "type": "finished",
                     "graph_name": config["configurable"]["graph_name"],
                     "data": {
-                        "system_description": state.get("system_description"),
-                        "system_functions": state.get("system_functions"),
-                        "assumptions": state.get("assumptions"),
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                     },
                 },
             )
             continue
 
-        clean = normalize_graph_event(update, config)
+        clean = normalize_graph_event(update["data"], config)
 
         if clean is None:
             continue
@@ -101,8 +105,8 @@ async def handle_resume(session_id: str, data: dict):
 # -------------------
 # WebSocket endpoint
 # -------------------
-@system_definition_router.websocket("/ws/system/{session_id}")
-async def system_definition_ws(websocket: WebSocket, session_id: str):
+@overall_observer_router.websocket("/ws/overall_observer/{session_id}")
+async def overall_observer_ws(websocket: WebSocket, session_id: str):
     await ws_manager_graph.connect(session_id, websocket)
 
     try:

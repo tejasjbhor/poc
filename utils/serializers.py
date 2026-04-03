@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 from registeries.graph_ws_serializers import GRAPH_WS_SERIALIZERS
 
 
-def normalize_graph_event(update, graph_name: str):
+def normalize_graph_event(update, config):
+    graph_name = config["configurable"]["graph_name"]
 
     if not update:
         return None
@@ -13,13 +14,13 @@ def normalize_graph_event(update, graph_name: str):
 
         return {
             "type": "interrupt",
-            "graph": graph_name,
+            "graph_name": graph_name,
             "data": [{"id": i.id, "value": i.value} for i in interrupts],
         }
 
     # 2. Normal node output
     node_name, payload = next(iter(update.items()))
-    
+
     # =========================
     # GRAPH-SPECIFIC ROUTING
     # =========================
