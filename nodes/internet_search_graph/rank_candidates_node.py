@@ -30,5 +30,4 @@ def rank_candidates_node(state: InternetSearchState, config, llm):
     return {
         "ranked_candidates": parsed,
         "graph_name": config["configurable"]["graph_name"],
-        "step": "FINAL_VALIDATION",
     }

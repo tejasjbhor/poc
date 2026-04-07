@@ -3,7 +3,7 @@ from typing import TypedDict, List, Dict, Any, Optional
 
 class InternetSearchState(TypedDict):
     # --- initial input ---
-    question: str
+    question: Optional[str]
     raw_user_input: Optional[str]
 
     # --- system understanding ---

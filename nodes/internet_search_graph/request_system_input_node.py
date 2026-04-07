@@ -25,5 +25,4 @@ def request_system_input_node(state: InternetSearchState, config, llm):
         "question": question,
         "raw_user_input": first_user_input["raw_user_input"],
         "graph_name": config["configurable"]["graph_name"],
-        "step": "INTERPRET_SYSTEM_INPUT",
     }
