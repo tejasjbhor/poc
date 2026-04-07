@@ -32,7 +32,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from graphs.sa_graph import build_graph
-from llm_config import get_llm_api_key
+from services.llm.llm_config import get_llm_api_key
 
 
 @asynccontextmanager

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from llm_config import get_chat_model
+from services.llm.llm_config import get_chat_model
 from state.sa_state import get_state
 from utils.cmd_input_output import apply_feedback, send_message
 

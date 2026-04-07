@@ -9,7 +9,7 @@ from typing import Any
 from langchain_core.messages import AIMessage, SystemMessage
 from langchain_core.output_parsers import StrOutputParser
 
-from llm_config import ainvoke_with_retry, get_chat_model
+from services.llm.llm_config import ainvoke_with_retry, get_chat_model
 from prompts.sa_prompts import AGENT1_SYSTEM
 from state.sa_state import PlatformState
 

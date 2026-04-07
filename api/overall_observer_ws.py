@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from graphs.overall_observer_graph import build_overall_observer_graph
 from graphs.system_definition_graph import build_system_definition_graph
 
-from llm_config import get_chat_model
+from services.llm.llm_config import get_chat_model
 from registeries.graph_registery import GRAPH_NAMES_REGISTERY
 from api.ws_manager_graph import ws_manager_graph
 from utils.serializers import normalize_finished_event, normalize_graph_event
