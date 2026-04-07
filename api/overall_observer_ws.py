@@ -23,6 +23,8 @@ _graph_name = GRAPH_NAMES_REGISTERY["overall_observer"]
 # -------------------
 graph = build_overall_observer_graph(_graph_name, get_chat_model())
 
+seen_interrupt_ids = set()
+
 
 # -------------------
 # Graph execution
@@ -47,7 +49,7 @@ async def start_graph(session_id: str, data: dict):
         subgraphs=True,
         version="v2",
     ):
-        clean = normalize_graph_event(update["data"], config)
+        clean = normalize_graph_event(update["data"], seen_interrupt_ids)
 
         if clean is None:
             continue
@@ -88,7 +90,7 @@ async def handle_resume(session_id: str, data: dict):
                 await normalize_finished_event(session_id, state, step_graph_name)
             continue
 
-        clean = normalize_graph_event(update["data"], config)
+        clean = normalize_graph_event(update["data"], seen_interrupt_ids)
 
         if clean is None:
             continue

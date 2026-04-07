@@ -80,11 +80,8 @@ def resolve_callable(agent_id: str, llm):
             # build once
             graph = fn(GRAPH_NAMES_REGISTERY[agent_id], llm)
 
-            results = []
-            async for chunk in graph.astream(state, config=enriched_config):
-                results.append(chunk)
-
-            return results[-1] if results else state
+            result = await graph.ainvoke(state, config=enriched_config)
+            return result
 
         return wrapper
 

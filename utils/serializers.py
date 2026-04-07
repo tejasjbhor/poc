@@ -1,29 +1,16 @@
 from datetime import datetime, timezone
 
 from api.ws_manager_graph import ws_manager_graph
+from helpers.interrupt_normalizer import normalize_interrupts
 from registeries.graph_ws_serializers import GRAPH_WS_SERIALIZERS
 
 
-def normalize_graph_event(update, config):
-    graph_name = config["configurable"]["graph_name"]
-
+def normalize_graph_event(update, seen_interrupt_ids=None):
     if not update:
         return None
 
     if "__interrupt__" in update:
-        interrupts = update["__interrupt__"]
-        data = []
-        graph_name = None
-
-        for i in interrupts:
-            graph_name = i.value.get("graph_name")  # assume same for all interrupts
-            data.append({"id": i.id, "value": i.value.get("question")})
-
-        return {
-            "type": "interrupt",
-            "graph_name": graph_name,
-            "data": data,
-        }
+        return normalize_interrupts(update["__interrupt__"], seen_interrupt_ids)
 
     # 2. Normal node output
     node_name, payload = next(iter(update.items()))

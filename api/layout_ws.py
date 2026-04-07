@@ -39,7 +39,7 @@ async def start_layout_graph(session_id: str, data: dict):
         state,
         config=config,
     ):
-        clean = normalize_graph_event(update, config)
+        clean = normalize_graph_event(update)
 
         if clean is None:
             continue
@@ -86,7 +86,7 @@ async def handle_layout_resume(session_id: str, data: dict):
         # =========================
         # Normal event handling
         # =========================
-        clean = normalize_graph_event(update, config)
+        clean = normalize_graph_event(update)
 
         if clean is None:
             continue

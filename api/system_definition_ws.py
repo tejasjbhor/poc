@@ -42,7 +42,7 @@ async def start_graph(session_id: str, data: dict):
         state,
         config=config,
     ):
-        clean = normalize_graph_event(update, config)
+        clean = normalize_graph_event(update)
 
         if clean is None:
             continue
@@ -77,10 +77,10 @@ async def handle_resume(session_id: str, data: dict):
             state = snapshot.values
             await normalize_finished_event(
                 session_id, state, config["configurable"]["graph_name"]
-            )            
+            )
             continue
 
-        clean = normalize_graph_event(update, config)
+        clean = normalize_graph_event(update)
 
         if clean is None:
             continue
