@@ -8,8 +8,7 @@ import os
 import random
 from pathlib import Path
 from typing import Any
-
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +20,9 @@ def load_llm_env() -> None:
     global _ENV_LOADED
     if _ENV_LOADED:
         return
-    for path in (_ROOT / ".env", _ROOT.parent / ".env"):
-        if path.is_file():
-            load_dotenv(path)
+    dotenv_path = find_dotenv()
+    if dotenv_path:
+        load_dotenv(dotenv_path)
     _ENV_LOADED = True
 
 
@@ -55,7 +54,11 @@ def get_chat_model() -> Any:
 
 def _retryable_llm_error(exc: BaseException) -> bool:
     try:
-        from langchain_anthropic import RateLimitError, InternalServerError, APIStatusError
+        from langchain_anthropic import (
+            RateLimitError,
+            InternalServerError,
+            APIStatusError,
+        )
     except ImportError:
         return False
     cur: BaseException | None = exc
@@ -74,7 +77,9 @@ def _retryable_llm_error(exc: BaseException) -> bool:
     return False
 
 
-async def ainvoke_with_retry(chain: Any, input_data: Any, *, max_attempts: int = 6) -> Any:
+async def ainvoke_with_retry(
+    chain: Any, input_data: Any, *, max_attempts: int = 6
+) -> Any:
     """Retry on Anthropic overload / rate limits / 5xx (transient)."""
     delay = 2.0
     last: BaseException | None = None

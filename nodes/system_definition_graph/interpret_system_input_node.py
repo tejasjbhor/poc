@@ -33,5 +33,4 @@ def interpret_system_input_node(state: SystemDefinitionState, config, llm):
         "assumptions": parsed_llm_interpretation.get("assumptions", []),
         "system_description": parsed_llm_interpretation.get("system_description", ""),
         "graph_name": config["configurable"]["graph_name"],
-        "step": "REQUEST_FUNCTION_REFINEMENT",
     }

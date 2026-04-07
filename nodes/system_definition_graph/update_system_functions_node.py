@@ -47,5 +47,4 @@ def update_system_functions_node(state: SystemDefinitionState, config, llm):
         ),
         # 🔁 go back to interpret
         "graph_name": config["configurable"]["graph_name"],
-        "step": "INTERPRET_SYSTEM_INPUT",
     }

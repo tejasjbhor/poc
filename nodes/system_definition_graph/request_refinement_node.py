@@ -49,8 +49,7 @@ def request_refinement_node(state: SystemDefinitionState, config, llm):
             "system_description": state.get("system_description"),
             "system_functions": state.get("system_functions"),
             "assumptions": state.get("assumptions", []),
-            "graph_name": config["configurable"]["graph_name"],
-            "needs_refinement": False,
+            "graph_name": config["configurable"]["graph_name"]
         }
 
     # 3. Return state update (ONLY place where state changes)
@@ -58,6 +57,5 @@ def request_refinement_node(state: SystemDefinitionState, config, llm):
         "refinement_question": question,
         "user_refinment_feedback": user_refinment_feedback,
         "step": "UPDATE_SYSTEM_FUNCTIONS",
-        "graph_name": config["configurable"]["graph_name"],
-        "needs_refinement": True,
+        "graph_name": config["configurable"]["graph_name"]
     }

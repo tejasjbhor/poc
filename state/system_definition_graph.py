@@ -15,7 +15,7 @@ class SystemDefinitionState(TypedDict):
     # interpreted result
     interpreted_input: Optional[str]
 
-    # Intermediate artifacts
+    # Graph Outputs
     system_description: Optional[str]
     assumptions: Optional[List[str]]
     system_functions: Optional[List[SystemFunction]]
@@ -23,7 +23,3 @@ class SystemDefinitionState(TypedDict):
     # Control flags
     step: Optional[str]
     graph_name: Optional[str]
-    validation_result: Optional[str]
-
-    # optional: loop control
-    needs_refinement: Optional[bool]
