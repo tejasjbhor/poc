@@ -1,4 +1,4 @@
-from typing import List, TypedDict, Optional, Dict, Any
+from typing import List, TypedDict, Optional
 
 from schemas.system_schemas import SystemFunction
 
@@ -10,14 +10,10 @@ class SystemDefinitionState(TypedDict):
 
     # User inputs
     first_user_description: Optional[str]
-    raw_user_input: Optional[str]
     user_refinment_feedback: Optional[str]
 
     # interpreted result
     interpreted_input: Optional[str]
-
-    # Structured state
-    current_state_json: Dict[str, Any]
 
     # Intermediate artifacts
     system_description: Optional[str]
@@ -25,12 +21,9 @@ class SystemDefinitionState(TypedDict):
     system_functions: Optional[List[SystemFunction]]
 
     # Control flags
-    step: str
-    graph_name: str
+    step: Optional[str]
+    graph_name: Optional[str]
     validation_result: Optional[str]
 
     # optional: loop control
     needs_refinement: Optional[bool]
-
-    # Output to user
-    message: Optional[str]

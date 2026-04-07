@@ -199,7 +199,7 @@ Input variables:
 - current_system_description: {system_description} 
 - current_system_functions: {system_functions}
 - current_assumptions: {assumptions}
-- user_feedback: {user_feedback}
+- user_feedback: {user_refinment_feedback}
 
 Your task:
 1. Apply user modifications carefully

@@ -18,7 +18,7 @@ def update_system_functions_node(state: SystemDefinitionState, config, llm):
             HumanMessage(
                 content=json.dumps(
                     {
-                        "user_feedback": state.get("user_refinment_feedback"),
+                        "user_refinment_feedback": state.get("user_refinment_feedback"),
                         "system_description": state.get("system_description"),
                         "system_functions": state.get("system_functions"),
                         "assumptions": state.get("assumptions"),
