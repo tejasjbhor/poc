@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 
 def _handle_system_definition(node_name, payload, graph_name):
 
-    # 2. INTERPRETATION → show as message (NOT interrupt)
     if node_name == "INTERPRET_SYSTEM_INPUT":
         return {
             "type": "message",
@@ -12,10 +11,9 @@ def _handle_system_definition(node_name, payload, graph_name):
             "data": payload.get("interpreted_input"),
         }
 
-    # 2. INTERPRETATION → show as message (NOT interrupt)
     if node_name == "UPDATE_SYSTEM_FUNCTIONS":
         return {
-            "type": "data",  # ⚠️ better than "message" for structured data
+            "type": "data",
             "node": node_name,
             "graph_name": graph_name,
             "data": {
@@ -25,14 +23,6 @@ def _handle_system_definition(node_name, payload, graph_name):
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             },
         }
-
-    # # 4. DEFAULT → raw node data
-    # return {
-    #     "type": "message",
-    #     "node": node_name,
-    #     "graph_name": graph_name,
-    #     "data": payload,
-    # }
 
 
 def _handle_internet_search(node_name, payload, graph_name):
@@ -77,13 +67,6 @@ def _handle_internet_search(node_name, payload, graph_name):
             "data": payload.get("ranked_candidates"),
         }
 
-    # return {
-    #     "type": "message",
-    #     "node": node_name,
-    #     "graph_name": graph_name,
-    #     "data": payload,
-    # }
-
 
 def _handle_layout(node_name, payload, graph_name):
 
@@ -113,10 +96,37 @@ def _handle_layout(node_name, payload, graph_name):
             },
         }
 
-    # fallback (safety)
-    # return {
-    #     "type": "data",
-    #     "node": node_name,
-    #     "graph_name": graph_name,
-    #     "data": payload,
-    # }
+
+def _handle_sa_super_graph(node_name, payload, graph_name):
+    if node_name == "FETCH_GRAPH_CONTEXT":
+        chain = payload.get("event_chain") or []
+        return {
+            "type": "data",
+            "node": node_name,
+            "graph_name": graph_name,
+            "data": {
+                "event_chain_len": len(chain),
+                "last_event_kind": chain[-1].get("kind")
+                if chain and isinstance(chain[-1], dict)
+                else None,
+            },
+        }
+
+    if node_name == "SUPER_OBSERVER_LLM":
+        return {
+            "type": "data",
+            "node": node_name,
+            "graph_name": graph_name,
+            "data": {
+                "next_agent": payload.get("next_agent"),
+                "session_goal": payload.get("session_goal"),
+                "goal_progress": payload.get("goal_progress"),
+                "sa_inferred_domain": payload.get("sa_inferred_domain"),
+                "sa_inferred_task": payload.get("sa_inferred_task"),
+                "sa_phase": payload.get("sa_phase"),
+                "sa_thoughts": payload.get("sa_thoughts"),
+                "sa_checklist": payload.get("sa_checklist"),
+                "sa_card": payload.get("sa_card"),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+        }

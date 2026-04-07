@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     research_batch_size: int = 5      # requirements per agent invocation
     max_agent_iterations: int = 20
 
+    sa_super_snapshot_dir: str = ""
+    sa_super_snapshot_max_files: int = 100
+
 
 @lru_cache()
 def get_settings() -> Settings:

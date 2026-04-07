@@ -17,12 +17,7 @@ def normalize_graph_event(update, graph_name: str):
             "data": [{"id": i.id, "value": i.value} for i in interrupts],
         }
 
-    # 2. Normal node output
     node_name, payload = next(iter(update.items()))
-    
-    # =========================
-    # GRAPH-SPECIFIC ROUTING
-    # =========================
     handler = GRAPH_WS_SERIALIZERS.get(graph_name)
 
     if handler:

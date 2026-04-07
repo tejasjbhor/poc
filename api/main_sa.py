@@ -60,21 +60,21 @@ app.add_middleware(
 
 router = APIRouter()
 
-#class1 
+
 class CreateSessionResponse(BaseModel):
     session_id: str
 
-#class4
+
 class MessageIn(BaseModel):
     text: str
 
-#class3
+
 class MessageOut(BaseModel):
     user: str
     assistant: str
     sa_state: dict
 
-#class4
+
 class CardFeedback(BaseModel):
     action: str
     suggestion_id: str | None = None
