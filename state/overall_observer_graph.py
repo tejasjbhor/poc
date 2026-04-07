@@ -9,6 +9,12 @@ from langgraph.graph.state import CompiledStateGraph
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
 
+from schemas.layout_schemas import (
+    Coordinates,
+    LayoutConstraints,
+    LayoutNode,
+    LayoutRationale,
+)
 from schemas.system_schemas import SystemFunction
 
 
@@ -59,9 +65,20 @@ class OverallObserverState(TypedDict, total=False):
     sa_readiness_buffer: list
     sa_context_for_agent: Annotated[dict, _merge_sa_context]
     sa_feedback: Any
+    # --- System Definition ---
     system_description: Optional[str]
     assumptions: Optional[List[str]]
     system_functions: Optional[List[SystemFunction]]
+
+    # --- Layout ---
+    layout_constraints: LayoutConstraints
+    layout: List[LayoutNode]
+    total_area: float
+    facility_coordinates: Coordinates
+    layout_user_feedback: Optional[str]
+    layout_rationale: LayoutRationale
+    layout_status: str
+
     last_step: str
     step: str
     next_step: str

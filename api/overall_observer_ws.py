@@ -78,15 +78,14 @@ async def handle_resume(session_id: str, data: dict):
             step_graph_name = None
         else:
             node_name, payload = next(iter(update["data"].items()))  # 👈 step 1
-            print(payload)
-            step = payload["step"] or payload["next_step"]  # 👈 step 2
+            step = payload.get("step") or payload.get("next_step")  # 👈 step 2
             step_graph_name = payload["graph_name"]
 
-        if step == "FINAL" and step_graph_name != _graph_name:
+        if step == "FINAL":
             snapshot = await graph.aget_state(config=config)
-            print(snapshot)
             state = snapshot.values
-            await normalize_finished_event(session_id, state, step_graph_name)
+            if state.get("graph_name") != _graph_name:
+                await normalize_finished_event(session_id, state, step_graph_name)
             continue
 
         clean = normalize_graph_event(update["data"], config)
