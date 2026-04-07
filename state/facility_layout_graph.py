@@ -27,13 +27,6 @@ class FacilityLayoutState(TypedDict):
     layout_constraints: LayoutConstraints
 
     # =========================
-    # INTERMEDIATE (optional but useful)
-    # =========================
-    flow_edges: List[dict]  # derived from interfaces
-    ordered_flow: List[str]
-    zones: List[dict]
-
-    # =========================
     # OUTPUT LAYOUT GRAPH
     # =========================
     layout: List[LayoutNode]

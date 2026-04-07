@@ -25,9 +25,6 @@ graph = build_facility_layout_graph(_graph_name, get_chat_model())
 
 async def start_layout_graph(session_id: str, data: dict):
 
-    state = {
-        "step": "REQUEST_LAYOUT_INPUT",
-    }
     config = {
         "configurable": {
             "thread_id": session_id,
@@ -36,7 +33,7 @@ async def start_layout_graph(session_id: str, data: dict):
     }
 
     async for update in graph.astream(
-        state,
+        {},
         config=config,
     ):
         clean = normalize_graph_event(update)

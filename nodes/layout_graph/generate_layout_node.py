@@ -50,5 +50,4 @@ def generate_layout_node(state: FacilityLayoutState, config, llm):
         "layout_rationale": parsed.get("layout_rationale", {}),
         "layout_user_feedback": "",  # clear feedback after applying it
         "graph_name": config["configurable"]["graph_name"],
-        "step": "REVIEW_LAYOUT",
     }
