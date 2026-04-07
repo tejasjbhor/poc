@@ -16,6 +16,7 @@ from utils.json_utils import coerce_json
 
 def collect_constraints_node(state: FacilityLayoutState, config, llm):
     prompt = FACILITY_LAYOUT_PROMPTS["prompt_collect_layout_constraints"]
+    graph_name = state.get("execution_context").get("current_graph")
 
     response = safe_llm_invoke(
         llm,
@@ -45,7 +46,7 @@ def collect_constraints_node(state: FacilityLayoutState, config, llm):
     user_refinment_feedback = interrupt(
         {
             "question": layout_constraints,
-            "graph_name": config["configurable"]["graph_name"],
+            "graph_name": graph_name,
         }
     )
 
@@ -55,7 +56,7 @@ def collect_constraints_node(state: FacilityLayoutState, config, llm):
             "layout_constraints": layout_constraints,
             "constraints_user_feedback": user_refinment_feedback["raw_user_input"]
             or "",
-            "graph_name": config["configurable"]["graph_name"],
+            "graph_name": graph_name,
             "step": "GENERATE_LAYOUT",
         }
 
@@ -63,6 +64,6 @@ def collect_constraints_node(state: FacilityLayoutState, config, llm):
     return {
         "layout_constraints": layout_constraints,
         "constraints_user_feedback": user_refinment_feedback["raw_user_input"] or "",
-        "graph_name": config["configurable"]["graph_name"],
+        "graph_name": graph_name,
         "step": "REFINE_CONSTRAINTS",
     }

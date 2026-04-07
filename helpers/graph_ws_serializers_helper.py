@@ -3,6 +3,14 @@ from datetime import datetime, timezone
 
 def _handle_system_definition(node_name, payload):
 
+    if node_name == "EXECUTION_CONTEXT_DEFINITION":
+        return {
+            "type": "data",
+            "node": node_name,
+            "graph_name": payload.get("graph_name"),
+            "data": payload.get("execution_context"),
+        }
+
     # 2. INTERPRETATION → show as message (NOT interrupt)
     if node_name == "INTERPRET_SYSTEM_INPUT":
         return {
@@ -37,6 +45,13 @@ def _handle_system_definition(node_name, payload):
 
 def _handle_internet_search(node_name, payload):
 
+    if node_name == "EXECUTION_CONTEXT_DEFINITION":
+        return {
+            "type": "data",
+            "node": node_name,
+            "graph_name": payload.get("graph_name"),
+            "data": payload.get("execution_context"),
+        }
     if node_name == "INTERPRET_SYSTEM_INPUT":
         return {
             "type": "data",
@@ -86,6 +101,13 @@ def _handle_internet_search(node_name, payload):
 
 
 def _handle_layout(node_name, payload):
+    if node_name == "EXECUTION_CONTEXT_DEFINITION":
+        return {
+            "type": "data",
+            "node": node_name,
+            "graph_name": payload.get("graph_name"),
+            "data": payload.get("execution_context"),
+        }
 
     if node_name == "NORMALIZE_INPUT":
         return {
@@ -123,7 +145,13 @@ def _handle_layout(node_name, payload):
 
 
 def _handle_overall_observer(node_name, payload):
-
+    if node_name == "EXECUTION_CONTEXT_DEFINITION":
+        return {
+            "type": "data",
+            "node": node_name,
+            "graph_name": payload.get("graph_name"),
+            "data": payload.get("execution_context"),
+        }
     return {
         "type": "data",
         "node": node_name,

@@ -19,6 +19,7 @@ from nodes.internet_search_graph.validate_queries_node import validate_queries_n
 from nodes.internet_search_graph.validate_system_input_node import (
     validate_system_input_node,
 )
+from nodes.shared_nodes.context_definition_node import context_definition_node
 from state.internet_search_graph import InternetSearchState
 
 
@@ -28,6 +29,15 @@ def build_internet_search_graph(graph_name, llm):
     # =========================
     # Nodes
     # =========================
+
+    builder.add_node(
+        "EXECUTION_CONTEXT_DEFINITION",
+        log_node(
+            graph_name,
+            "EXECUTION_CONTEXT_DEFINITION",
+            partial(context_definition_node),
+        ),
+    )
 
     builder.add_node(
         "REQUEST_SYSTEM_INPUT",
@@ -104,8 +114,8 @@ def build_internet_search_graph(graph_name, llm):
     # =========================
     # Entry
     # =========================
-
-    builder.add_edge(START, "REQUEST_SYSTEM_INPUT")
+    builder.add_edge(START, "EXECUTION_CONTEXT_DEFINITION")
+    builder.add_edge("EXECUTION_CONTEXT_DEFINITION", "REQUEST_SYSTEM_INPUT")
 
     # =========================
     # Linear Flow

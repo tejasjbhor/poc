@@ -7,6 +7,7 @@ from schemas.layout_schemas import (
     LayoutRationale,
 )
 from schemas.system_schemas import SystemFunction
+from state.shared_nodes_states.context_definition_node import ExecutionContext
 
 
 class FacilityLayoutState(TypedDict):
@@ -36,6 +37,7 @@ class FacilityLayoutState(TypedDict):
     layout_user_feedback: Optional[str]
     layout_rationale: LayoutRationale
 
-    # COptional[ontrol flags]
+    # Optional[control flags]
+    execution_context: ExecutionContext
     step: Optional[str]
     graph_name: str

@@ -3,6 +3,7 @@ from functools import partial
 
 from helpers.log_node import log_node
 
+from nodes.shared_nodes.context_definition_node import context_definition_node
 from nodes.system_definition_graph.request_refinement_node import (
     request_refinement_node,
 )
@@ -25,6 +26,15 @@ def build_system_definition_graph(graph_name, llm):
     # =========================
     # Nodes
     # =========================
+
+    builder.add_node(
+        "EXECUTION_CONTEXT_DEFINITION",
+        log_node(
+            graph_name,
+            "EXECUTION_CONTEXT_DEFINITION",
+            partial(context_definition_node),
+        ),
+    )
 
     builder.add_node(
         "REQUEST_SYSTEM_INPUT",
@@ -62,7 +72,8 @@ def build_system_definition_graph(graph_name, llm):
         ),
     )
 
-    builder.add_edge(START, "REQUEST_SYSTEM_INPUT")
+    builder.add_edge(START, "EXECUTION_CONTEXT_DEFINITION")
+    builder.add_edge("EXECUTION_CONTEXT_DEFINITION", "REQUEST_SYSTEM_INPUT")
     builder.add_edge("REQUEST_SYSTEM_INPUT", "INTERPRET_SYSTEM_INPUT")
     builder.add_edge("INTERPRET_SYSTEM_INPUT", "REQUEST_FUNCTION_REFINEMENT")
 

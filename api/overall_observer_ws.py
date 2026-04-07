@@ -77,17 +77,15 @@ async def handle_resume(session_id: str, data: dict):
         # TODO Not a clean solution, to be improved
         if "__interrupt__" in update["data"]:
             step = None
-            step_graph_name = None
         else:
             node_name, payload = next(iter(update["data"].items()))  # 👈 step 1
             step = payload.get("step") or payload.get("next_step")  # 👈 step 2
-            step_graph_name = payload["graph_name"]
 
         if step == "FINAL":
             snapshot = await graph.aget_state(config=config)
             state = snapshot.values
             if state.get("graph_name") != _graph_name:
-                await normalize_finished_event(session_id, state, step_graph_name)
+                await normalize_finished_event(session_id, state)
             continue
 
         clean = normalize_graph_event(update["data"], seen_interrupt_ids)

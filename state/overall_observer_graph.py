@@ -13,6 +13,7 @@ from schemas.layout_schemas import (
     LayoutRationale,
 )
 from schemas.system_schemas import SystemFunction
+from state.shared_nodes_states.context_definition_node import ExecutionContext
 
 
 class OverallObserverState(TypedDict, total=False):
@@ -35,6 +36,7 @@ class OverallObserverState(TypedDict, total=False):
     queries: List[str]
     ranked_candidates: List[Dict[str, Any]]
 
+    execution_context: ExecutionContext
     last_step: str
     step: str
     next_step: str

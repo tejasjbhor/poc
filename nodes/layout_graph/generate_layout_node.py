@@ -16,6 +16,7 @@ from utils.json_utils import coerce_json
 
 def generate_layout_node(state: FacilityLayoutState, config, llm):
     prompt = FACILITY_LAYOUT_PROMPTS["prompt_generate_layout"]
+    graph_name = state.get("execution_context").get("current_graph")
 
     payload = {
         "system_description": state.get("system_description"),
@@ -49,5 +50,5 @@ def generate_layout_node(state: FacilityLayoutState, config, llm):
         "facility_coordinates": parsed.get("facility_coordinates", {}),
         "layout_rationale": parsed.get("layout_rationale", {}),
         "layout_user_feedback": "",  # clear feedback after applying it
-        "graph_name": config["configurable"]["graph_name"],
+        "graph_name": graph_name,
     }

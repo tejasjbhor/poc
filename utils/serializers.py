@@ -18,12 +18,12 @@ def normalize_graph_event(update, seen_interrupt_ids=None):
     # GRAPH-SPECIFIC ROUTING
     # =========================
     handler = GRAPH_WS_SERIALIZERS.get(payload.get("graph_name"))
-
     if handler:
         return handler(node_name, payload)
 
 
-async def normalize_finished_event(session_id, state, graph_name):
+async def normalize_finished_event(session_id, state):
+    graph_name = state.get("execution_context").get("current_graph")
     if graph_name == "system_definition":
         return await ws_manager_graph.send(
             session_id,

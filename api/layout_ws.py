@@ -76,7 +76,7 @@ async def handle_layout_resume(session_id: str, data: dict):
             snapshot = await graph.aget_state(config=config)
             state = snapshot.values
             await normalize_finished_event(
-                session_id, state, config["configurable"]["graph_name"]
+                session_id, state
             )
             continue
 

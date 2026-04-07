@@ -5,6 +5,7 @@ from langgraph.graph import StateGraph, START, END
 from helpers.log_node import log_node
 
 from nodes.overall_observer_graph.routing_decider_node import routing_decider_node
+from nodes.shared_nodes.context_definition_node import context_definition_node
 from registeries.agent_registry import get_all_agent_ids, resolve_callable
 from state.overall_observer_graph import OverallObserverState
 from langgraph.checkpoint.memory import InMemorySaver
@@ -12,6 +13,15 @@ from langgraph.checkpoint.memory import InMemorySaver
 
 def build_overall_observer_graph(graph_name, llm):
     builder = StateGraph(OverallObserverState)
+
+    builder.add_node(
+        "EXECUTION_CONTEXT_DEFINITION",
+        log_node(
+            graph_name,
+            "EXECUTION_CONTEXT_DEFINITION",
+            partial(context_definition_node),
+        ),
+    )
 
     builder.add_node(
         "DECIDE_ROUTE",
@@ -41,7 +51,8 @@ def build_overall_observer_graph(graph_name, llm):
             ),
         )
 
-    builder.add_edge(START, "DECIDE_ROUTE")
+    builder.add_edge(START, "EXECUTION_CONTEXT_DEFINITION")
+    builder.add_edge("EXECUTION_CONTEXT_DEFINITION", "DECIDE_ROUTE")
 
     builder.add_conditional_edges(
         "DECIDE_ROUTE",
