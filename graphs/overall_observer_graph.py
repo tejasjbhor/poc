@@ -55,6 +55,9 @@ def build_overall_observer_graph(graph_name, llm):
         },
     )
 
+    for n in all_agent_ids:
+        builder.add_edge(n.upper(), "DECIDE_ROUTE")
+
     checkpointer = InMemorySaver()
 
     return builder.compile(checkpointer=checkpointer)

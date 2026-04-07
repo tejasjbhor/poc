@@ -27,7 +27,7 @@ def collect_constraints_node(state: FacilityLayoutState, config, llm):
                         "system_description": state.get("system_description"),
                         "system_functions": state.get("system_functions"),
                         "assumptions": state.get("assumptions", []),
-                        "constraints": state.get("constraints", {}),
+                        "layout_constraints": state.get("layout_constraints", {}),
                         "constraints_user_feedback": state.get(
                             "constraints_user_feedback", ""
                         ),
@@ -37,25 +37,32 @@ def collect_constraints_node(state: FacilityLayoutState, config, llm):
         ],
     )
 
-    user_refinment_feedback = interrupt(response.content)
-
     try:
-        parsed_llm_interpretation = coerce_json(user_refinment_feedback)
+        layout_constraints = coerce_json(response.content)
     except Exception:
-        parsed_llm_interpretation = {}
+        layout_constraints = {}
+
+    user_refinment_feedback = interrupt(
+        {
+            "question": layout_constraints,
+            "graph_name": config["configurable"]["graph_name"],
+        }
+    )
 
     # 3. Detect if user wants to stop refinement
     if is_done_user_input(user_refinment_feedback["raw_user_input"]):
         return {
-            "constraints": parsed_llm_interpretation,
+            "layout_constraints": layout_constraints,
             "constraints_user_feedback": user_refinment_feedback["raw_user_input"]
             or "",
+            "graph_name": config["configurable"]["graph_name"],
             "step": "GENERATE_LAYOUT",
         }
 
     # 3. Return state update (ONLY place where state changes)
     return {
-        "constraints": json.loads(response.content),
+        "layout_constraints": layout_constraints,
         "constraints_user_feedback": user_refinment_feedback["raw_user_input"] or "",
+        "graph_name": config["configurable"]["graph_name"],
         "step": "REFINE_CONSTRAINTS",
     }

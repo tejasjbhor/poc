@@ -26,6 +26,7 @@ class SystemDefinitionState(TypedDict):
 
     # Control flags
     step: str
+    graph_name: str
     validation_result: Optional[str]
 
     # optional: loop control

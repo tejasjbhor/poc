@@ -24,3 +24,4 @@ class InternetSearchState(TypedDict):
 
     # --- control ---
     step: str
+    graph_name: str

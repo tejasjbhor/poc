@@ -14,8 +14,9 @@ def routing_decider_node(state: OverallObserverState, config, llm):
 
     ➡️ *Please pick one to proceed.*
 """
-    user_input = interrupt(question)
-
+    user_input = interrupt(
+        {"question": question, "graph_name": config["configurable"]["graph_name"]}
+    )
     next_step = None
 
     match user_input["raw_user_input"].strip():
@@ -32,4 +33,5 @@ def routing_decider_node(state: OverallObserverState, config, llm):
         "last_step": state.get("step"),
         "step": state.get("next_step"),
         "next_step": next_step,
+        "graph_name": config["configurable"]["graph_name"],
     }

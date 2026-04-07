@@ -11,7 +11,7 @@ from langgraph.types import Command
 from graphs.layout_graph import build_facility_layout_graph
 from llm_config import get_chat_model
 from registeries.graph_registery import GRAPH_NAMES_REGISTERY
-from utils.serializers import normalize_graph_event
+from utils.serializers import normalize_finished_event, normalize_graph_event
 
 
 layout_router = APIRouter()
@@ -78,25 +78,8 @@ async def handle_layout_resume(session_id: str, data: dict):
         if step == "FINAL":
             snapshot = await graph.aget_state(config=config)
             state = snapshot.values
-
-            await ws_manager_graph.send(
-                session_id,
-                {
-                    "type": "finished",
-                    "graph_name": config["configurable"]["graph_name"],
-                    "data": {
-                        "system_description": state.get("system_description", ""),
-                        "system_functions": state.get("system_functions", []),
-                        "assumptions": state.get("assumptions", {}),
-                        "constraints": state.get("constraints", {}),
-                        "layout": state.get("layout", {}),
-                        "total_area": state.get("total_area", 0),
-                        "facility_coordinates": state.get("facility_coordinates", {}),
-                        "layout_status": state.get("layout_status", ""),
-                        "layout_rationale": state.get("layout_rationale", {}),
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    },
-                },
+            await normalize_finished_event(
+                session_id, state, config["configurable"]["graph_name"]
             )
             continue
 

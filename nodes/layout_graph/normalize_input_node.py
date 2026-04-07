@@ -14,5 +14,6 @@ def normalize_input_node(state: FacilityLayoutState, config):
     return {
         "system_description": raw.get("system_description", ""),
         "system_functions": raw.get("system_functions", []),
+        "graph_name": config["configurable"]["graph_name"],
         "assumptions": raw.get("assumptions", []),
     }

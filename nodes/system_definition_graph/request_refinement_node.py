@@ -36,7 +36,9 @@ def request_refinement_node(state: SystemDefinitionState, config, llm):
         question = state["refinement_question"]
 
     # 2. Interrupt (pause)
-    user_refinment_feedback = interrupt(question)
+    user_refinment_feedback = interrupt(
+        {"question": question, "graph_name": config["configurable"]["graph_name"]}
+    )
 
     # 3. Detect if user wants to stop refinement
     if is_done_user_input(user_refinment_feedback["raw_user_input"]):
@@ -44,6 +46,10 @@ def request_refinement_node(state: SystemDefinitionState, config, llm):
             "refinement_question": question,
             "user_refinment_feedback": user_refinment_feedback,
             "step": "FINAL",
+            "system_description": state.get("system_description"),
+            "system_functions": state.get("system_functions"),
+            "assumptions": state.get("assumptions", []),
+            "graph_name": config["configurable"]["graph_name"],
             "needs_refinement": False,
         }
 
@@ -52,5 +58,6 @@ def request_refinement_node(state: SystemDefinitionState, config, llm):
         "refinement_question": question,
         "user_refinment_feedback": user_refinment_feedback,
         "step": "UPDATE_SYSTEM_FUNCTIONS",
+        "graph_name": config["configurable"]["graph_name"],
         "needs_refinement": True,
     }

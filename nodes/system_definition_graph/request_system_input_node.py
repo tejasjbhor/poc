@@ -17,10 +17,13 @@ def request_system_input_node(state: SystemDefinitionState, config, llm):
     else:
         question = state["question"]
 
-    first_user_description = interrupt(question)
+    first_user_description = interrupt(
+        {"question": question, "graph_name": config["configurable"]["graph_name"]}
+    )
 
     return {
         "question": question,
         "first_user_description": first_user_description["raw_user_input"],
+        "graph_name": config["configurable"]["graph_name"],
         "step": "INTERPRET_SYSTEM_INPUT",
     }

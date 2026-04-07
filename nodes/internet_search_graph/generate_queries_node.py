@@ -33,5 +33,6 @@ def generate_queries_node(state: InternetSearchState, config, llm):
 
     return {
         "queries": parsed.get("queries", []),
+        "graph_name": config["configurable"]["graph_name"],
         "step": "VALIDATE_QUERIES",
     }

@@ -10,7 +10,7 @@ from graphs.internet_search_graph import build_internet_search_graph
 from llm_config import get_chat_model
 from registeries.graph_registery import GRAPH_NAMES_REGISTERY
 from api.ws_manager_graph import ws_manager_graph
-from utils.serializers import normalize_graph_event
+from utils.serializers import normalize_finished_event, normalize_graph_event
 
 # 🔧 import your tools registry
 
@@ -79,9 +79,11 @@ async def handle_resume(session_id: str, data: dict):
         # 🔍 detect step
         if "__interrupt__" in update:
             step = None
+            step_graph_name = None
         else:
             node_name, payload = next(iter(update.items()))
             step = payload.get("step")
+            step_graph_name = payload["graph_name"]
 
         # =========================
         # FINAL OUTPUT
@@ -89,19 +91,8 @@ async def handle_resume(session_id: str, data: dict):
         if step == "FINAL":
             snapshot = await graph.aget_state(config=config)
             state = snapshot.values
-
-            await ws_manager_graph.send(
-                session_id,
-                {
-                    "type": "finished",
-                    "graph_name": config["configurable"]["graph_name"],
-                    "data": {
-                        "system_understanding": state.get("system_understanding"),
-                        "queries": state.get("queries"),
-                        "ranked_candidates": state.get("ranked_candidates"),
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    },
-                },
+            await normalize_finished_event(
+                session_id, state, step_graph_name
             )
             continue
 

@@ -39,5 +39,6 @@ def final_validation_node(state: InternetSearchState, config, llm):
     #     }
 
     return {
+        "graph_name": config["configurable"]["graph_name"],
         "step": "FINAL",
     }

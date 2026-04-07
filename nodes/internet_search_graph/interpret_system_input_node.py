@@ -21,5 +21,6 @@ def interpret_system_input_node(state: InternetSearchState, config, llm):
 
     return {
         "system_understanding": parsed,
+        "graph_name": config["configurable"]["graph_name"],
         "step": "VALIDATE_SYSTEM_INPUT",
     }

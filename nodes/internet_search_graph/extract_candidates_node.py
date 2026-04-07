@@ -29,5 +29,6 @@ def extract_candidates_node(state: InternetSearchState, config, llm):
 
     return {
         "candidates": parsed,
+        "graph_name": config["configurable"]["graph_name"],
         "step": "RANK_CANDIDATES",
     }

@@ -59,5 +59,6 @@ async def search_sources_node(state: InternetSearchState, config):
 
     return {
         "raw_results": raw_results,
+        "graph_name": config["configurable"]["graph_name"],
         "step": "EXTRACT_CANDIDATES",
     }

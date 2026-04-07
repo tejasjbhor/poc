@@ -11,7 +11,7 @@ from graphs.system_definition_graph import build_system_definition_graph
 from llm_config import get_chat_model
 from registeries.graph_registery import GRAPH_NAMES_REGISTERY
 from api.ws_manager_graph import ws_manager_graph
-from utils.serializers import normalize_graph_event
+from utils.serializers import normalize_finished_event, normalize_graph_event
 
 
 overall_observer_router = APIRouter()
@@ -75,23 +75,18 @@ async def handle_resume(session_id: str, data: dict):
         # TODO Not a clean solution, to be improved
         if "__interrupt__" in update["data"]:
             step = None
+            step_graph_name = None
         else:
             node_name, payload = next(iter(update["data"].items()))  # 👈 step 1
-            step = payload.get("data")  # 👈 step 2
+            print(payload)
+            step = payload["step"] or payload["next_step"]  # 👈 step 2
+            step_graph_name = payload["graph_name"]
 
-        if step == "FINAL":
+        if step == "FINAL" and step_graph_name != _graph_name:
             snapshot = await graph.aget_state(config=config)
+            print(snapshot)
             state = snapshot.values
-            await ws_manager_graph.send(
-                session_id,
-                {
-                    "type": "finished",
-                    "graph_name": config["configurable"]["graph_name"],
-                    "data": {
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    },
-                },
-            )
+            await normalize_finished_event(session_id, state, step_graph_name)
             continue
 
         clean = normalize_graph_event(update["data"], config)

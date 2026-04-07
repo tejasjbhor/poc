@@ -24,7 +24,7 @@ class FacilityLayoutState(TypedDict):
     # =========================
     # CONSTRAINTS (SIMPLIFIED)
     # =========================
-    constraints: LayoutConstraints
+    layout_constraints: LayoutConstraints
 
     # =========================
     # INTERMEDIATE (optional but useful)
@@ -45,3 +45,4 @@ class FacilityLayoutState(TypedDict):
 
     # COptional[ontrol flags]
     step: Optional[str]
+    graph_name: str

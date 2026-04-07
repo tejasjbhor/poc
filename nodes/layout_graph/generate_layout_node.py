@@ -21,8 +21,8 @@ def generate_layout_node(state: FacilityLayoutState, config, llm):
         "system_description": state.get("system_description"),
         "system_functions": state.get("system_functions"),
         "assumptions": state.get("assumptions", []),
-        "hard_constraints": state.get("constraints", {}).get("hard", []),
-        "soft_constraints": state.get("constraints", {}).get("soft", []),
+        "hard_constraints": state.get("layout_constraints", {}).get("hard", []),
+        "soft_constraints": state.get("layout_constraints", {}).get("soft", []),
         "layout": state.get("layout", None),
         "layout_user_feedback": state.get("layout_user_feedback", ""),
     }
@@ -49,5 +49,6 @@ def generate_layout_node(state: FacilityLayoutState, config, llm):
         "facility_coordinates": parsed.get("facility_coordinates", {}),
         "layout_rationale": parsed.get("layout_rationale", {}),
         "layout_user_feedback": "",  # clear feedback after applying it
+        "graph_name": config["configurable"]["graph_name"],
         "step": "REVIEW_LAYOUT",
     }

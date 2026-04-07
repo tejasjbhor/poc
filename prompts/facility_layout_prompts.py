@@ -55,7 +55,7 @@ Assumptions:
 PREVIOUS CONSTRAINTS (may be empty)
 ---------------------------------------
 
-{constraints}
+{layout_constraints}
 
 ---------------------------------------
 USER FEEDBACK (may be empty)

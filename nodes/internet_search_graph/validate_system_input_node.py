@@ -18,18 +18,24 @@ def validate_system_input_node(state: InternetSearchState, config, llm):
         llm,
         [
             SystemMessage(content=prompt),
-            HumanMessage(content=json.dumps({"system_understanding": system_understanding})),
+            HumanMessage(
+                content=json.dumps({"system_understanding": system_understanding})
+            ),
         ],
     ).content
 
-    user_action = interrupt(question)
+    user_action = interrupt(
+        {"question": question, "graph_name": config["configurable"]["graph_name"]}
+    )
 
     if not is_done_user_input(user_action["raw_user_input"]):
         return {
             "system_understanding": user_action["raw_user_input"],
+            "graph_name": config["configurable"]["graph_name"],
             "step": "INTERPRET_SYSTEM_INPUT",
         }
 
     return {
+        "graph_name": config["configurable"]["graph_name"],
         "step": "GENERATE_QUERIES",
     }

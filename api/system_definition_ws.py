@@ -10,7 +10,7 @@ from graphs.system_definition_graph import build_system_definition_graph
 from llm_config import get_chat_model
 from registeries.graph_registery import GRAPH_NAMES_REGISTERY
 from api.ws_manager_graph import ws_manager_graph
-from utils.serializers import normalize_graph_event
+from utils.serializers import normalize_finished_event, normalize_graph_event
 
 
 system_definition_router = APIRouter()
@@ -75,19 +75,9 @@ async def handle_resume(session_id: str, data: dict):
         if step == "FINAL":
             snapshot = await graph.aget_state(config=config)
             state = snapshot.values
-            await ws_manager_graph.send(
-                session_id,
-                {
-                    "type": "finished",
-                    "graph_name": config["configurable"]["graph_name"],
-                    "data": {
-                        "system_description": state.get("system_description"),
-                        "system_functions": state.get("system_functions"),
-                        "assumptions": state.get("assumptions"),
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    },
-                },
-            )
+            await normalize_finished_event(
+                session_id, state, config["configurable"]["graph_name"]
+            )            
             continue
 
         clean = normalize_graph_event(update, config)
