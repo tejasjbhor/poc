@@ -8,15 +8,12 @@ from langchain.messages import HumanMessage, SystemMessage
 from langgraph.types import interrupt
 
 
-from langchain_core.messages import SystemMessage, HumanMessage
-import json
-
 from utils.json_utils import coerce_json
 
 
 def collect_constraints_node(state: FacilityLayoutState, config, llm):
     prompt = FACILITY_LAYOUT_PROMPTS["prompt_collect_layout_constraints"]
-    graph_name = state.get("execution_context").get("current_graph")
+    graph_name = getattr(state.execution_context, "current_graph", None)
 
     response = safe_llm_invoke(
         llm,
@@ -25,13 +22,19 @@ def collect_constraints_node(state: FacilityLayoutState, config, llm):
             HumanMessage(
                 content=json.dumps(
                     {
-                        "system_description": state.get("system_description"),
-                        "system_functions": state.get("system_functions"),
-                        "assumptions": state.get("assumptions", []),
-                        "layout_constraints": state.get("layout_constraints", {}),
-                        "constraints_user_feedback": state.get(
-                            "constraints_user_feedback", ""
+                        "system_description": state.system_description,
+                        "system_functions": [
+                            f.model_dump() if hasattr(f, "model_dump") else f
+                            for f in state.system_functions
+                        ],
+                        "assumptions": state.assumptions,
+                        "layout_constraints": (
+                            state.layout_constraints.model_dump()
+                            if hasattr(state.layout_constraints, "model_dump")
+                            else state.layout_constraints
                         ),
+                        "constraints_user_feedback": state.constraints_user_feedback
+                        or "",
                     }
                 )
             ),
@@ -50,20 +53,17 @@ def collect_constraints_node(state: FacilityLayoutState, config, llm):
         }
     )
 
-    # 3. Detect if user wants to stop refinement
-    if is_done_user_input(user_refinment_feedback["raw_user_input"]):
-        return {
-            "layout_constraints": layout_constraints,
-            "constraints_user_feedback": user_refinment_feedback["raw_user_input"]
-            or "",
-            "graph_name": graph_name,
-            "step": "GENERATE_LAYOUT",
-        }
+    user_input = user_refinment_feedback.get("raw_user_input", "")
 
-    # 3. Return state update (ONLY place where state changes)
-    return {
-        "layout_constraints": layout_constraints,
-        "constraints_user_feedback": user_refinment_feedback["raw_user_input"] or "",
-        "graph_name": graph_name,
-        "step": "REFINE_CONSTRAINTS",
-    }
+    return state.model_copy(
+        update={
+            "layout_constraints": layout_constraints,
+            "constraints_user_feedback": user_input or "",
+            "graph_name": graph_name,
+            "step": (
+                "GENERATE_LAYOUT"
+                if is_done_user_input(user_input)
+                else "REFINE_CONSTRAINTS"
+            ),
+        }
+    )

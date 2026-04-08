@@ -9,7 +9,9 @@ from nodes.layout_graph.generate_layout_node import generate_layout_node
 from nodes.layout_graph.normalize_input_node import normalize_input_node
 from nodes.layout_graph.collect_input_node import collect_input_node
 from nodes.layout_graph.review_layout_node import review_layout_node
-from nodes.shared_nodes.execution_context_definition_node import execution_context_definition_node
+from nodes.shared_nodes.execution_context_definition_node import (
+    execution_context_definition_node,
+)
 from state.facility_layout_graph import FacilityLayoutState
 from langgraph.checkpoint.memory import InMemorySaver
 
@@ -97,7 +99,7 @@ def build_facility_layout_graph(graph_name, llm):
     # =========================
     builder.add_conditional_edges(
         "COLLECT_CONSTRAINTS",
-        lambda s: s["step"],
+        lambda s: s.step,
         {
             "GENERATE_LAYOUT": "GENERATE_LAYOUT",
             "REFINE_CONSTRAINTS": "COLLECT_CONSTRAINTS",
@@ -106,7 +108,7 @@ def build_facility_layout_graph(graph_name, llm):
 
     builder.add_conditional_edges(
         "REVIEW_LAYOUT",
-        lambda s: s["step"],
+        lambda s: s.step,
         {
             "REFINE_LAYOUT": "GENERATE_LAYOUT",
             "FINAL": END,

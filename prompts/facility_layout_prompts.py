@@ -267,7 +267,11 @@ OUTPUT FORMAT (STRICT JSON ONLY)
       "surface_area": number,
       "function_name": "string",
       "connections": [
-        ["connected_component_id", "direction", "shared_materials"]
+        {
+          "connected_component_id": "string",
+          "direction": "string" , #'up', 'down', 'left', 'right', 'bidirectional'
+          "shared_materials": ["string"]
+        }
       ]
     }
   ],

@@ -1,11 +1,14 @@
-from typing import Any, Dict, Literal
+from typing import Any, Dict
 
+from helpers.ensure_execution_context import ensure_execution_context
 from state.shared_nodes_states.context_definition_node import ExecutionContext
 
 
-def execution_context_definition_node(state: ExecutionContext, config) -> ExecutionContext:
+def execution_context_definition_node(
+    state: ExecutionContext, config
+) -> ExecutionContext:
     metadata: Dict[str, Any] = config.get("metadata") or {}  # safe access
-    existing_ctx = state.get("execution_context") or {}
+    existing_ctx = ensure_execution_context(state.execution_context)
     # -------------------------
     # Identify current graph
     # -------------------------
@@ -13,19 +16,17 @@ def execution_context_definition_node(state: ExecutionContext, config) -> Execut
     # -------------------------
     # Run / tracing identity
     # -------------------------
-    run_id = metadata.get("run_id") or state.get("run_id")
+    run_id = metadata.get("run_id") or existing_ctx.run_id
 
     # -------------------------
     # Parent graph detection (subgraph detection key)
     # -------------------------
-    if "current_graph" in existing_ctx and current_graph != existing_ctx.get(
-        "current_graph"
-    ):
-        parent_graph = existing_ctx.get("current_graph")
-        depth = existing_ctx.get("depth") + 1
-        previous_graph = existing_ctx.get("previous_graph") or existing_ctx.get("current_graph")
+    if current_graph != existing_ctx.current_graph:
+        parent_graph = existing_ctx.current_graph
+        depth = existing_ctx.depth + 1
+        previous_graph = existing_ctx.previous_graph or existing_ctx.current_graph
         source = "graph"
-        mode: Literal["standalone", "subgraph", "resume", "batch"] = "subgraph"
+        mode = "subgraph"
     else:
         parent_graph = None
         source = "user"
@@ -36,27 +37,28 @@ def execution_context_definition_node(state: ExecutionContext, config) -> Execut
     # -------------------------
     # Root graph resolution
     # -------------------------
-    root_graph = existing_ctx.get("root_graph") or parent_graph or current_graph
+    root_graph = existing_ctx.root_graph or parent_graph or current_graph
 
     # -------------------------
     # Build execution context
     # -------------------------
-    execution_context: ExecutionContext = {
-        "mode": mode,
-        "source": source,
-        "parent_graph": parent_graph,
-        "current_graph": current_graph,
-        "root_graph": root_graph,
-        "previous_graph": previous_graph,
-        "depth": depth,
-        "run_id": run_id,
-    }
+    execution_context: ExecutionContext = ExecutionContext(
+        mode=mode,
+        source=source,
+        parent_graph=parent_graph,
+        current_graph=current_graph,
+        root_graph=root_graph,
+        previous_graph=previous_graph,
+        depth=depth,
+        run_id=run_id,
+    )
 
     # -------------------------
     # Return updated state
     # -------------------------
-    return {
-        **state,
-        "execution_context": execution_context,
-        "graph_name": current_graph,
-    }
+    return state.model_copy(
+        update={
+            "execution_context": execution_context,
+            "graph_name": current_graph,
+        }
+    )

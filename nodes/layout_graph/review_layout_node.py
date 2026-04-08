@@ -5,22 +5,17 @@ from langgraph.types import interrupt
 
 def review_layout_node(state: FacilityLayoutState, config, llm):
     question = "Please review carefully the proposed layout, and give your feedback. If all is good, type done."
-    graph_name = state.get("execution_context").get("current_graph")
+    graph_name = getattr(state.execution_context, "current_graph", None)
 
-    layout_user_feedback = interrupt(
-        {"question": question, "graph_name": graph_name}
-    )
+    layout_user_feedback = interrupt({"question": question, "graph_name": graph_name})
 
-    # 3. Detect if user wants to stop refinement
-    if is_done_user_input(layout_user_feedback["raw_user_input"]):
-        return {
-            "layout_user_feedback": layout_user_feedback["raw_user_input"],
+    user_input = layout_user_feedback.get("raw_user_input", "")
+
+    return state.model_copy(
+        update={
+            "layout_user_feedback": user_input,
+            "constraints_user_feedback": user_input or "",
             "graph_name": graph_name,
-            "step": "FINAL",
+            "step": ("FINAL" if is_done_user_input(user_input) else "REFINE_LAYOUT"),
         }
-
-    return {
-        "layout_user_feedback": layout_user_feedback["raw_user_input"],
-        "graph_name": graph_name,
-        "step": "REFINE_LAYOUT",
-    }
+    )
