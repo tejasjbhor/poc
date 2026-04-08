@@ -3,7 +3,7 @@ from functools import partial
 
 from helpers.log_node import log_node
 
-from nodes.shared_nodes.context_definition_node import context_definition_node
+from nodes.shared_nodes.execution_context_definition_node import execution_context_definition_node
 from nodes.system_definition_graph.request_refinement_node import (
     request_refinement_node,
 )
@@ -32,7 +32,7 @@ def build_system_definition_graph(graph_name, llm):
         log_node(
             graph_name,
             "EXECUTION_CONTEXT_DEFINITION",
-            partial(context_definition_node),
+            partial(execution_context_definition_node),
         ),
     )
 

@@ -5,7 +5,12 @@ from langgraph.graph import StateGraph, START, END
 from helpers.log_node import log_node
 
 from nodes.overall_observer_graph.routing_decider_node import routing_decider_node
-from nodes.shared_nodes.context_definition_node import context_definition_node
+from nodes.shared_nodes.execution_context_definition_node import (
+    execution_context_definition_node,
+)
+from nodes.shared_nodes.normalize_execution_context_node import (
+    normalize_execution_context_node,
+)
 from registeries.agent_registry import get_all_agent_ids, resolve_callable
 from state.overall_observer_graph import OverallObserverState
 from langgraph.checkpoint.memory import InMemorySaver
@@ -19,7 +24,7 @@ def build_overall_observer_graph(graph_name, llm):
         log_node(
             graph_name,
             "EXECUTION_CONTEXT_DEFINITION",
-            partial(context_definition_node),
+            partial(execution_context_definition_node),
         ),
     )
 
@@ -29,6 +34,15 @@ def build_overall_observer_graph(graph_name, llm):
             graph_name,
             "DECIDE_ROUTE",
             partial(routing_decider_node, llm=llm),
+        ),
+    )
+
+    builder.add_node(
+        "NORMALIZE_EXECUTION_CONTEXT",
+        log_node(
+            graph_name,
+            "NORMALIZE_EXECUTION_CONTEXT",
+            partial(normalize_execution_context_node),
         ),
     )
 
@@ -67,7 +81,9 @@ def build_overall_observer_graph(graph_name, llm):
     )
 
     for n in all_agent_ids:
-        builder.add_edge(n.upper(), "DECIDE_ROUTE")
+        builder.add_edge(n.upper(), "NORMALIZE_EXECUTION_CONTEXT")
+
+    builder.add_edge("NORMALIZE_EXECUTION_CONTEXT", "DECIDE_ROUTE")
 
     checkpointer = InMemorySaver()
 

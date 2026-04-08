@@ -19,7 +19,7 @@ from nodes.internet_search_graph.validate_queries_node import validate_queries_n
 from nodes.internet_search_graph.validate_system_input_node import (
     validate_system_input_node,
 )
-from nodes.shared_nodes.context_definition_node import context_definition_node
+from nodes.shared_nodes.execution_context_definition_node import execution_context_definition_node
 from state.internet_search_graph import InternetSearchState
 
 
@@ -35,7 +35,7 @@ def build_internet_search_graph(graph_name, llm):
         log_node(
             graph_name,
             "EXECUTION_CONTEXT_DEFINITION",
-            partial(context_definition_node),
+            partial(execution_context_definition_node),
         ),
     )
 

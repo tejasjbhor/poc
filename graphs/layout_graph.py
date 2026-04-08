@@ -9,7 +9,7 @@ from nodes.layout_graph.generate_layout_node import generate_layout_node
 from nodes.layout_graph.normalize_input_node import normalize_input_node
 from nodes.layout_graph.collect_input_node import collect_input_node
 from nodes.layout_graph.review_layout_node import review_layout_node
-from nodes.shared_nodes.context_definition_node import context_definition_node
+from nodes.shared_nodes.execution_context_definition_node import execution_context_definition_node
 from state.facility_layout_graph import FacilityLayoutState
 from langgraph.checkpoint.memory import InMemorySaver
 
@@ -26,7 +26,7 @@ def build_facility_layout_graph(graph_name, llm):
         log_node(
             graph_name,
             "EXECUTION_CONTEXT_DEFINITION",
-            partial(context_definition_node),
+            partial(execution_context_definition_node),
         ),
     )
 
