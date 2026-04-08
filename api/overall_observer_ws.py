@@ -69,14 +69,12 @@ async def handle_resume(session_id: str, data: dict):
         subgraphs=True,
         version="v2",
     ):
-        print("update", update)
         # TODO Not a clean solution, to be improved
         if "__interrupt__" in update["data"]:
             step = None
         else:
             node_name, payload = next(iter(update["data"].items()))  # 👈 step 1
             step = payload.get("step") or payload.get("next_step")  # 👈 step 2
-            print("step", step)
 
         if step == "FINAL":
             snapshot = await graph.aget_state(config=config)
