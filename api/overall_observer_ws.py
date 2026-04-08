@@ -3,14 +3,13 @@ import json
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from langgraph.types import Command
-from datetime import datetime, timezone
 
 from graphs.overall_observer_graph import build_overall_observer_graph
-from graphs.system_definition_graph import build_system_definition_graph
 
 from services.llm.llm_config import get_chat_model
 from registeries.graph_registery import GRAPH_NAMES_REGISTERY
 from api.ws_manager_graph import ws_manager_graph
+from utils.ws_to_json_safe import ws_to_json_safe
 from utils.serializers import normalize_finished_event, normalize_graph_event
 
 
@@ -31,11 +30,6 @@ seen_interrupt_ids = set()
 # -------------------
 async def start_graph(session_id: str, data: dict):
 
-    state = {
-        # "step": "DECIDE_ROUTE",
-        # "raw_user_input": data.get("payload"),
-    }
-
     config = {
         "configurable": {
             "thread_id": session_id,
@@ -44,7 +38,7 @@ async def start_graph(session_id: str, data: dict):
     }
 
     async for update in graph.astream(
-        state,
+        {},
         config=config,
         subgraphs=True,
         version="v2",
@@ -54,6 +48,7 @@ async def start_graph(session_id: str, data: dict):
         if clean is None:
             continue
 
+        clean = ws_to_json_safe(clean)
         await ws_manager_graph.send(session_id, clean)
 
 
@@ -74,18 +69,21 @@ async def handle_resume(session_id: str, data: dict):
         subgraphs=True,
         version="v2",
     ):
+        print("update", update)
         # TODO Not a clean solution, to be improved
         if "__interrupt__" in update["data"]:
             step = None
         else:
             node_name, payload = next(iter(update["data"].items()))  # 👈 step 1
             step = payload.get("step") or payload.get("next_step")  # 👈 step 2
+            print("step", step)
 
         if step == "FINAL":
             snapshot = await graph.aget_state(config=config)
-            state = snapshot.values
-            if state.get("graph_name") != _graph_name:
-                await normalize_finished_event(session_id, state)
+            safe_state = ws_to_json_safe(snapshot.values)
+            # print(safe_state)
+            if safe_state.get("graph_name") != _graph_name:
+                await normalize_finished_event(session_id, safe_state)
             continue
 
         clean = normalize_graph_event(update["data"], seen_interrupt_ids)
@@ -93,6 +91,7 @@ async def handle_resume(session_id: str, data: dict):
         if clean is None:
             continue
 
+        clean = ws_to_json_safe(clean)
         await ws_manager_graph.send(session_id, clean)
 
 

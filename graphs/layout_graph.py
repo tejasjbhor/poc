@@ -6,6 +6,7 @@ from helpers.log_node import log_node
 
 from nodes.layout_graph.collect_constraints_node import collect_constraints_node
 from nodes.layout_graph.generate_layout_node import generate_layout_node
+from nodes.layout_graph.hydrate_layout_graph_node import hydrate_layout_graph_node
 from nodes.layout_graph.normalize_input_node import normalize_input_node
 from nodes.layout_graph.collect_input_node import collect_input_node
 from nodes.layout_graph.review_layout_node import review_layout_node
@@ -29,6 +30,15 @@ def build_facility_layout_graph(graph_name, llm):
             graph_name,
             "EXECUTION_CONTEXT_DEFINITION",
             partial(execution_context_definition_node),
+        ),
+    )
+
+    builder.add_node(
+        "HYDRATE_LAYOUT",
+        log_node(
+            graph_name,
+            "HYDRATE_LAYOUT",
+            partial(hydrate_layout_graph_node),
         ),
     )
 
@@ -82,7 +92,7 @@ def build_facility_layout_graph(graph_name, llm):
     # =========================
 
     builder.add_edge(START, "EXECUTION_CONTEXT_DEFINITION")
-    builder.add_edge("EXECUTION_CONTEXT_DEFINITION", "COLLECT_INPUT")
+    builder.add_edge("EXECUTION_CONTEXT_DEFINITION", "HYDRATE_LAYOUT")
 
     # =========================
     # Flow
@@ -97,6 +107,15 @@ def build_facility_layout_graph(graph_name, llm):
     # =========================
     # Conditional routing (feedback loop)
     # =========================
+    builder.add_conditional_edges(
+        "HYDRATE_LAYOUT",
+        lambda s: s.step,
+        {
+            "COLLECT_INPUT": "COLLECT_INPUT",
+            "COLLECT_CONSTRAINTS": "COLLECT_CONSTRAINTS",
+        },
+    )
+
     builder.add_conditional_edges(
         "COLLECT_CONSTRAINTS",
         lambda s: s.step,

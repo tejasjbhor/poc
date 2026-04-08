@@ -79,7 +79,7 @@ def build_system_definition_graph(graph_name, llm):
 
     builder.add_conditional_edges(
         "REQUEST_FUNCTION_REFINEMENT",
-        lambda s: s["step"],
+        lambda s: s.step,
         {
             "UPDATE_SYSTEM_FUNCTIONS": "UPDATE_SYSTEM_FUNCTIONS",
             "FINAL": END,

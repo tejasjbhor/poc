@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from schemas.layout_schemas import (
     Coordinates,
@@ -24,8 +24,8 @@ class FacilityLayoutState(BaseModel):
     # INPUT GRAPH
     # =========================
     system_description: Optional[str] = None
-    system_functions: Optional[List[SystemFunction]] = None
-    assumptions: Optional[List[str]] = None
+    system_functions: Optional[List[SystemFunction]] = Field(default_factory=list)
+    assumptions: Optional[List[str]] = Field(default_factory=list)
 
     # =========================
     # CONSTRAINTS

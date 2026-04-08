@@ -3,6 +3,7 @@ from langgraph.types import interrupt
 
 
 def routing_decider_node(state: OverallObserverState, config, llm):
+    graph_name = getattr(state.execution_context, "current_graph", None)
 
     question = """**Hey! 👋**
 
@@ -14,9 +15,7 @@ def routing_decider_node(state: OverallObserverState, config, llm):
 
     ➡️ *Please pick one to proceed.*
 """
-    user_input = interrupt(
-        {"question": question, "graph_name": config["configurable"]["graph_name"]}
-    )
+    user_input = interrupt({"question": question, "graph_name": graph_name})
     next_step = None
 
     match user_input["raw_user_input"].strip():
@@ -29,9 +28,11 @@ def routing_decider_node(state: OverallObserverState, config, llm):
         case _:
             next_step = None
 
-    return {
-        "last_step": state.get("step"),
-        "step": state.get("next_step"),
-        "next_step": next_step,
-        "graph_name": config["configurable"]["graph_name"],
-    }
+    return state.model_copy(
+        update={
+            "last_step": state.step,
+            "step": state.next_step,
+            "next_step": next_step,
+            "graph_name": graph_name,
+        }
+    )

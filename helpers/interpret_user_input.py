@@ -18,4 +18,9 @@ def is_done_user_input(text: str) -> bool:
 
     text_lower = text.strip().lower()
 
-    return any(k in text_lower for k in DONE_KEYWORDS)
+    if text == "done":
+        return True
+    else:
+        return False
+
+    # return any(k in text_lower for k in DONE_KEYWORDS)

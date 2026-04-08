@@ -21,7 +21,10 @@ def execution_context_definition_node(
     # -------------------------
     # Parent graph detection (subgraph detection key)
     # -------------------------
-    if current_graph != existing_ctx.current_graph:
+    if (
+        existing_ctx.current_graph is not None
+        and current_graph != existing_ctx.current_graph
+    ):
         parent_graph = existing_ctx.current_graph
         depth = existing_ctx.depth + 1
         previous_graph = existing_ctx.previous_graph or existing_ctx.current_graph

@@ -70,7 +70,7 @@ def build_overall_observer_graph(graph_name, llm):
 
     builder.add_conditional_edges(
         "DECIDE_ROUTE",
-        lambda s: s["next_step"] or "DECIDE_ROUTE",
+        lambda s: s.next_step or "DECIDE_ROUTE",
         {
             "DECIDE_ROUTE": "DECIDE_ROUTE",
             "SYSTEM_DEFINITION": "SYSTEM_DEFINITION",

@@ -10,8 +10,9 @@ from utils.json_utils import coerce_json
 
 def interpret_system_input_node(state: SystemDefinitionState, config, llm):
     prompt = SYSTEM_DEFINITION_PROMPTS["prompt_interpret_system_input"]
+    graph_name = getattr(state.execution_context, "current_graph", None)
 
-    raw_input = state.get("first_user_description")
+    raw_input = state.first_user_description
 
     response = safe_llm_invoke(
         llm,
@@ -27,10 +28,14 @@ def interpret_system_input_node(state: SystemDefinitionState, config, llm):
     except Exception:
         parsed_llm_interpretation = {}
 
-    return {
-        "interpreted_input": raw_llm_interpretation,
-        "system_functions": parsed_llm_interpretation.get("system_functions", []),
-        "assumptions": parsed_llm_interpretation.get("assumptions", []),
-        "system_description": parsed_llm_interpretation.get("system_description", ""),
-        "graph_name": config["configurable"]["graph_name"],
-    }
+    return state.model_copy(
+        update={
+            "interpreted_input": raw_llm_interpretation,
+            "system_functions": parsed_llm_interpretation.get("system_functions", []),
+            "assumptions": parsed_llm_interpretation.get("assumptions", []),
+            "system_description": parsed_llm_interpretation.get(
+                "system_description", ""
+            ),
+            "graph_name": graph_name,
+        }
+    )

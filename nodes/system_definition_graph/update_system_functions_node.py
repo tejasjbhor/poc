@@ -10,6 +10,7 @@ from utils.json_utils import coerce_json
 
 def update_system_functions_node(state: SystemDefinitionState, config, llm):
     prompt = SYSTEM_DEFINITION_PROMPTS["prompt_update_system_functions"]
+    graph_name = getattr(state.execution_context, "current_graph", None)
 
     response = safe_llm_invoke(
         llm,
@@ -18,10 +19,12 @@ def update_system_functions_node(state: SystemDefinitionState, config, llm):
             HumanMessage(
                 content=json.dumps(
                     {
-                        "user_refinment_feedback": state.get("user_refinment_feedback"),
-                        "system_description": state.get("system_description"),
-                        "system_functions": state.get("system_functions"),
-                        "assumptions": state.get("assumptions"),
+                        "user_refinment_feedback": state.user_refinment_feedback,
+                        "system_description": state.system_description,
+                        "system_functions": [
+                            f.model_dump() for f in state.system_functions or []
+                        ],
+                        "assumptions": state.assumptions,
                     }
                 )
             ),
@@ -35,16 +38,18 @@ def update_system_functions_node(state: SystemDefinitionState, config, llm):
     except Exception:
         parsed_llm_interpretation = {}
 
-    return {
-        "system_functions": parsed_llm_interpretation.get(
-            "system_functions", state.get("system_functions")
-        ),
-        "assumptions": parsed_llm_interpretation.get(
-            "assumptions", state.get("assumptions")
-        ),
-        "system_description": parsed_llm_interpretation.get(
-            "system_description", state.get("system_description")
-        ),
-        # 🔁 go back to interpret
-        "graph_name": config["configurable"]["graph_name"],
-    }
+    return state.model_copy(
+        update={
+            "system_functions": parsed_llm_interpretation.get(
+                "system_functions", state.system_functions
+            ),
+            "assumptions": parsed_llm_interpretation.get(
+                "assumptions", state.assumptions
+            ),
+            "system_description": parsed_llm_interpretation.get(
+                "system_description", state.system_description
+            ),
+            # 🔁 go back to interpret
+            "graph_name": graph_name,
+        }
+    )

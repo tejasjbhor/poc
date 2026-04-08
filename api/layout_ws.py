@@ -11,6 +11,7 @@ from langgraph.types import Command
 from graphs.layout_graph import build_facility_layout_graph
 from services.llm.llm_config import get_chat_model
 from registeries.graph_registery import GRAPH_NAMES_REGISTERY
+from utils.ws_to_json_safe import ws_to_json_safe
 from utils.serializers import normalize_finished_event, normalize_graph_event
 
 
@@ -21,19 +22,6 @@ _graph_name = GRAPH_NAMES_REGISTERY["layout"]
 
 # Build graph once
 graph = build_facility_layout_graph(_graph_name, get_chat_model())
-
-
-def to_json_safe(obj):
-    if hasattr(obj, "model_dump"):
-        return obj.model_dump()
-
-    if isinstance(obj, dict):
-        return {k: to_json_safe(v) for k, v in obj.items()}
-
-    if isinstance(obj, list):
-        return [to_json_safe(v) for v in obj]
-
-    return obj
 
 
 async def start_layout_graph(session_id: str, data: dict):
@@ -54,7 +42,7 @@ async def start_layout_graph(session_id: str, data: dict):
         if clean is None:
             continue
 
-        clean = to_json_safe(clean)
+        clean = ws_to_json_safe(clean)
         await ws_manager_graph.send(session_id, clean)
 
 
@@ -88,8 +76,8 @@ async def handle_layout_resume(session_id: str, data: dict):
         # =========================
         if step == "FINAL":
             snapshot = await graph.aget_state(config=config)
-            state = snapshot.values
-            await normalize_finished_event(session_id, state)
+            safe_state = ws_to_json_safe(snapshot.values)
+            await normalize_finished_event(session_id, safe_state)
             continue
 
         # =========================
@@ -100,7 +88,7 @@ async def handle_layout_resume(session_id: str, data: dict):
         if clean is None:
             continue
 
-        clean = to_json_safe(clean)
+        clean = ws_to_json_safe(clean)
         await ws_manager_graph.send(session_id, clean)
 
 
