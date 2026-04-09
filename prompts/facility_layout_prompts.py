@@ -42,14 +42,9 @@ RULES
 INPUT DATA
 ---------------------------------------
 
-System description:
-{system_description}
+System Definition
 
-System functions:
-{system_functions}
-
-Assumptions:
-{assumptions}
+{system_definition}
 
 ---------------------------------------
 PREVIOUS CONSTRAINTS (may be empty)
@@ -64,13 +59,9 @@ USER FEEDBACK (may be empty)
 {constraints_user_feedback}
 
 ---------------------------------------
-OUTPUT FORMAT (STRICT JSON ONLY)
+OUTPUT FORMAT
 ---------------------------------------
-
-{
-  "hard": ["..."],
-  "soft": ["..."]
-}
+You are returning a structured object matching the schema.
 """.strip(),
     # =========================================================
     # 4. LAYOUT NODE (generate + refine unified)
@@ -215,14 +206,8 @@ If infeasible → must preserve violations
 INPUT
 ---------------------------------------
 
-System description:
-{system_description}
-
-System functions:
-{system_functions}
-
-Assumptions:
-{assumptions}
+System Definition:
+{system_definition}
 
 Hard constraints:
 {hard_constraints}
@@ -234,7 +219,7 @@ Soft constraints:
 PREVIOUS LAYOUT (may be empty)
 ---------------------------------------
 
-{layout}
+{previous_layout}
 
 ---------------------------------------
 USER FEEDBACK (may be empty)
@@ -243,44 +228,8 @@ USER FEEDBACK (may be empty)
 {layout_user_feedback}
 
 ---------------------------------------
-OUTPUT FORMAT (STRICT JSON ONLY)
+OUTPUT FORMAT
 ---------------------------------------
-
-{
-  "layout_status": "feasible | constrained | infeasible",
-  "total_area": number,
-  "facility_coordinates": {
-    "x": number,
-    "y": number,
-    "width": number,
-    "height": number
-  },
-  "layout": [
-    {
-      "id": "string",
-      "coordinates": {
-        "x": number,
-        "y": number,
-        "width": number,
-        "height": number
-      },
-      "surface_area": number,
-      "function_name": "string",
-      "connections": [
-        {
-          "connected_component_id": "string",
-          "direction": "string" , #'up', 'down', 'left', 'right', 'bidirectional'
-          "shared_materials": ["string"]
-        }
-      ]
-    }
-  ],
-  "layout_rationale": {
-    "organizing_principle": "string",
-    "major_adjacency_choices": [],
-    "assumptions": [],
-    "constraint_tradeoffs": []
-  }
-}
+You are returning a structured object matching the schema.
 """.strip(),
 }

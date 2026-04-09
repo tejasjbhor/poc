@@ -12,6 +12,7 @@ from schemas.domain.layout import (
     LayoutRationale,
 )
 from schemas.domain.system import SystemFunction
+from schemas.graphs.system_definition.output import SystemDefinitionOutput
 from state.shared_nodes_states.context_definition_node import ExecutionContext
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -22,9 +23,7 @@ class OverallObserverState(BaseModel):
     model_config = ConfigDict(extra="allow")  # IMPORTANT for LangGraph compatibility
 
     # --- System Definition ---
-    system_description: Optional[str] = None
-    system_functions: Optional[List[SystemFunction]] = Field(default_factory=list)
-    assumptions: Optional[List[str]] = Field(default_factory=list)
+    system_definition: Optional[SystemDefinitionOutput] = None
 
     # =========================
     # LAYOUT GRAPH

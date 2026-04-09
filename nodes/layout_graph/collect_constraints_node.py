@@ -3,6 +3,8 @@ import json
 from helpers.interpret_user_input import is_done_user_input
 from helpers.llm_safe_invoke import safe_llm_invoke
 from prompts.facility_layout_prompts import FACILITY_LAYOUT_PROMPTS
+from schemas.domain.layout import LayoutConstraints
+from schemas.graphs.layout.output import LayoutOutput
 from state.facility_layout_graph import FacilityLayoutState
 from langchain.messages import HumanMessage, SystemMessage
 from langgraph.types import interrupt
@@ -15,6 +17,9 @@ def collect_constraints_node(state: FacilityLayoutState, config, llm):
     prompt = FACILITY_LAYOUT_PROMPTS["prompt_collect_layout_constraints"]
     graph_name = getattr(state.execution_context, "current_graph", None)
 
+    previous_layout = state.final_layout or LayoutOutput()
+    layout_constraints = previous_layout.layout_constraints
+
     response = safe_llm_invoke(
         llm,
         [
@@ -22,16 +27,15 @@ def collect_constraints_node(state: FacilityLayoutState, config, llm):
             HumanMessage(
                 content=json.dumps(
                     {
-                        "system_description": state.system_description,
-                        "system_functions": [
-                            f.model_dump() if hasattr(f, "model_dump") else f
-                            for f in state.system_functions
-                        ],
-                        "assumptions": state.assumptions,
+                        "system_definition": (
+                            state.system_definition.model_dump()
+                            if state.system_definition
+                            else None
+                        ),
                         "layout_constraints": (
-                            state.layout_constraints.model_dump()
-                            if hasattr(state.layout_constraints, "model_dump")
-                            else state.layout_constraints
+                            layout_constraints.model_dump()
+                            if layout_constraints
+                            else None
                         ),
                         "constraints_user_feedback": state.constraints_user_feedback
                         or "",
@@ -39,16 +43,12 @@ def collect_constraints_node(state: FacilityLayoutState, config, llm):
                 )
             ),
         ],
+        response_model=LayoutConstraints,
     )
-
-    try:
-        layout_constraints = coerce_json(response.content)
-    except Exception:
-        layout_constraints = {}
 
     user_refinment_feedback = interrupt(
         {
-            "question": layout_constraints,
+            "question": response,
             "graph_name": graph_name,
         }
     )
@@ -57,7 +57,11 @@ def collect_constraints_node(state: FacilityLayoutState, config, llm):
 
     return state.model_copy(
         update={
-            "layout_constraints": layout_constraints,
+            "final_layout": (
+                state.final_layout.model_copy(update={"layout_constraints": response})
+                if state.final_layout
+                else LayoutOutput(layout_constraints=response)
+            ),
             "constraints_user_feedback": user_input or "",
             "graph_name": graph_name,
             "step": (

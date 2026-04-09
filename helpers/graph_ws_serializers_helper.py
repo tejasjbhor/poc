@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from schemas.graphs.layout.output import LayoutOutput
 from schemas.graphs.system_definition.output import SystemDefinitionOutput
 
 
@@ -113,28 +114,32 @@ def _handle_layout(node_name, payload):
         }
 
     if node_name == "NORMALIZE_INPUT":
+        system_definition: SystemDefinitionOutput = payload.get("system_definition")
+        
         return {
             "type": "data",
             "node": node_name,
             "graph_name": payload.get("graph_name"),
             "data": {
-                "system_description": payload.get("system_description"),
-                "system_functions": payload.get("system_functions"),
-                "assumptions": payload.get("assumptions"),
+                "system_description": system_definition.system_description,
+                "system_functions": system_definition.system_functions,
+                "assumptions": system_definition.assumptions,
             },
         }
 
     if node_name == "GENERATE_LAYOUT":
+        final_layout: LayoutOutput = payload.get("final_layout")
+        
         return {
             "type": "data",
             "node": node_name,
             "graph_name": payload.get("graph_name"),
             "data": {
-                "layout": payload.get("layout"),
-                "facility_coordinates": payload.get("facility_coordinates"),
-                "layout_status": payload.get("layout_status", ""),
-                "total_area": payload.get("total_area"),
-                "layout_version": payload.get("layout_version"),
+                "layout": final_layout.layout,
+                "facility_coordinates": final_layout.facility_coordinates,
+                "layout_status": final_layout.layout_status,
+                "total_area": final_layout.total_area,
+                "layout_version": "0",
             },
         }
 

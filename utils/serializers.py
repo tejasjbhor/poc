@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from api.ws_manager_graph import ws_manager_graph
 from helpers.interrupt_normalizer import normalize_interrupts
 from registeries.graph_ws_serializers import GRAPH_WS_SERIALIZERS
+from schemas.graphs.layout.output import LayoutOutput
 from schemas.graphs.system_definition.output import SystemDefinitionOutput
 
 
@@ -43,21 +44,23 @@ async def normalize_finished_event(session_id, state):
         )
 
     if graph_name == "layout":
+        system_definition: SystemDefinitionOutput = state.get("system_definition")
+        final_layout: LayoutOutput = state.get("final_layout")
         return await ws_manager_graph.send(
             session_id,
             {
                 "type": "finished",
                 "graph_name": graph_name,
                 "data": {
-                    "system_description": state.get("system_description", ""),
-                    "system_functions": state.get("system_functions", []),
-                    "assumptions": state.get("assumptions", {}),
-                    "constraints": state.get("layout_constraints", {}),
-                    "layout": state.get("layout", {}),
-                    "total_area": state.get("total_area", 0),
-                    "facility_coordinates": state.get("facility_coordinates", {}),
-                    "layout_status": state.get("layout_status", ""),
-                    "layout_rationale": state.get("layout_rationale", {}),
+                    "system_description": system_definition.get("system_description", ""),
+                    "system_functions": system_definition.get("system_functions", []),
+                    "assumptions": system_definition.get("assumptions", {}),
+                    "constraints": final_layout.get("layout_constraints", {}),
+                    "layout": final_layout.get("layout", {}),
+                    "total_area": final_layout.get("total_area", 0),
+                    "facility_coordinates": final_layout.get("facility_coordinates", {}),
+                    "layout_status": final_layout.get("layout_status", ""),
+                    "layout_rationale": final_layout.get("layout_rationale", {}),
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 },
             },

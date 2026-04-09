@@ -1,5 +1,6 @@
 import json
 
+from schemas.graphs.layout.input import LayoutInput
 from state.facility_layout_graph import FacilityLayoutState
 
 
@@ -18,11 +19,15 @@ def normalize_input_node(state: FacilityLayoutState, config):
 
     raw = safe_parse_raw(state.raw_user_input)
 
+    system_definition = LayoutInput(
+        system_description=raw.get("system_description", ""),
+        system_functions=raw.get("system_functions", []),
+        assumptions=raw.get("assumptions", []),
+    )
+
     return state.model_copy(
         update={
-            "system_description": raw.get("system_description", ""),
-            "system_functions": raw.get("system_functions", []),
+            "system_definition": system_definition,
             "graph_name": graph_name,
-            "assumptions": raw.get("assumptions", []),
         }
     )

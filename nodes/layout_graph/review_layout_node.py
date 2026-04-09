@@ -14,7 +14,6 @@ def review_layout_node(state: FacilityLayoutState, config, llm):
     return state.model_copy(
         update={
             "layout_user_feedback": user_input,
-            "constraints_user_feedback": user_input or "",
             "graph_name": graph_name,
             "step": ("FINAL" if is_done_user_input(user_input) else "REFINE_LAYOUT"),
         }
