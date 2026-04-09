@@ -1,5 +1,6 @@
 import json
 
+
 class ConnectionManager:
     def __init__(self):
         self.connections = {}  # session_id -> websocket
