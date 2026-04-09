@@ -1,21 +1,18 @@
-from datetime import datetime, timezone
+import asyncio
+import json
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-import json
-import asyncio
-
-
-from api.ws_manager_graph import ws_manager_graph
 from langgraph.types import Command
 
+from api.ws_manager_graph import ws_manager_graph
 from graphs.layout_graph import build_facility_layout_graph
-from services.llm.llm_config import get_chat_model
 from registeries.graph_registery import GRAPH_NAMES_REGISTERY
+from services.llm.llm_config import get_chat_model
+from utils.execution_events import begin_graph_execution, build_graph_execution_message
 from utils.serializers import normalize_finished_event, normalize_graph_event
 
 
 layout_router = APIRouter()
-
 
 _graph_name = GRAPH_NAMES_REGISTERY["layout"]
 
@@ -24,6 +21,11 @@ graph = build_facility_layout_graph(_graph_name, get_chat_model())
 
 
 async def start_layout_graph(session_id: str, data: dict):
+    graph_execution = begin_graph_execution(_graph_name, session_id, trigger="start")
+    await ws_manager_graph.send(
+        session_id,
+        build_graph_execution_message(graph_execution, status="started"),
+    )
 
     config = {
         "configurable": {
@@ -32,21 +34,44 @@ async def start_layout_graph(session_id: str, data: dict):
         }
     }
 
-    async for update in graph.astream(
-        {},
-        config=config,
-    ):
-        clean = normalize_graph_event(update)
+    try:
+        async for update in graph.astream(
+            {},
+            config=config,
+        ):
+            clean = normalize_graph_event(update)
 
-        if clean is None:
-            continue
+            if clean is None:
+                continue
 
-        await ws_manager_graph.send(session_id, clean)
+            await ws_manager_graph.send(session_id, clean)
+
+            if clean.get("type") == "interrupt" and clean.get("graph_name") == _graph_name:
+                await ws_manager_graph.send(
+                    session_id,
+                    build_graph_execution_message(graph_execution, status="paused"),
+                )
+    except Exception as error:
+        await ws_manager_graph.send(
+            session_id,
+            build_graph_execution_message(
+                graph_execution,
+                status="failed",
+                error=error,
+            ),
+        )
+        raise
 
 
 async def handle_layout_resume(session_id: str, data: dict):
     interrupt_id = data.get("interrupt_id")
     value = data.get("value")
+    graph_execution = begin_graph_execution(_graph_name, session_id, trigger="resume")
+    await ws_manager_graph.send(
+        session_id,
+        build_graph_execution_message(graph_execution, status="started"),
+    )
+
     config = {
         "configurable": {
             "thread_id": session_id,
@@ -54,41 +79,57 @@ async def handle_layout_resume(session_id: str, data: dict):
         }
     }
 
-    async for update in graph.astream(
-        Command(
-            resume={"interrupt_id": interrupt_id, "raw_user_input": value},
-        ),
-        config=config,
-    ):
-        # =========================
-        # Extract step
-        # =========================
-        if "__interrupt__" in update:
-            step = None
-        else:
-            node_name, payload = next(iter(update.items()))
-            step = payload.get("step")
+    try:
+        async for update in graph.astream(
+            Command(
+                resume={"interrupt_id": interrupt_id, "raw_user_input": value},
+            ),
+            config=config,
+        ):
+            if "__interrupt__" in update:
+                step = None
+            else:
+                node_name, payload = next(iter(update.items()))
+                step = payload.get("step")
 
-        # =========================
-        # Finalization handling
-        # =========================
-        if step == "FINAL":
-            snapshot = await graph.aget_state(config=config)
-            state = snapshot.values
-            await normalize_finished_event(
-                session_id, state, config["configurable"]["graph_name"]
-            )
-            continue
+            if step == "FINAL":
+                snapshot = await graph.aget_state(config=config)
+                state = snapshot.values
+                await ws_manager_graph.send(
+                    session_id,
+                    build_graph_execution_message(
+                        graph_execution,
+                        status="completed",
+                        result=state,
+                    ),
+                )
+                await normalize_finished_event(
+                    session_id, state, config["configurable"]["graph_name"]
+                )
+                continue
 
-        # =========================
-        # Normal event handling
-        # =========================
-        clean = normalize_graph_event(update)
+            clean = normalize_graph_event(update)
 
-        if clean is None:
-            continue
+            if clean is None:
+                continue
 
-        await ws_manager_graph.send(session_id, clean)
+            await ws_manager_graph.send(session_id, clean)
+
+            if clean.get("type") == "interrupt" and clean.get("graph_name") == _graph_name:
+                await ws_manager_graph.send(
+                    session_id,
+                    build_graph_execution_message(graph_execution, status="paused"),
+                )
+    except Exception as error:
+        await ws_manager_graph.send(
+            session_id,
+            build_graph_execution_message(
+                graph_execution,
+                status="failed",
+                error=error,
+            ),
+        )
+        raise
 
 
 @layout_router.websocket("/ws/layout/{session_id}")

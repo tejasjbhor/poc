@@ -4,7 +4,9 @@ from __future__ import annotations
 import importlib
 
 
+from api.ws_manager_graph import ws_manager_graph
 from registeries.graph_registery import GRAPH_NAMES_REGISTERY
+from utils.execution_events import begin_graph_execution, build_graph_execution_message
 
 AGENTS: dict[str, dict] = {
     "system_definition": {
@@ -72,16 +74,71 @@ def resolve_callable(agent_id: str, llm):
         async def wrapper(state, config):
             enriched_config = dict(config or {})
             enriched_config.setdefault("configurable", {})
+            session_id = enriched_config["configurable"].get("thread_id")
+            child_graph_name = GRAPH_NAMES_REGISTERY[agent_id]
             enriched_config["configurable"] = {
                 **enriched_config["configurable"],
-                "graph_name": GRAPH_NAMES_REGISTERY[agent_id],
+                "graph_name": child_graph_name,
             }
+            graph_execution = begin_graph_execution(
+                child_graph_name,
+                session_id,
+                trigger="subgraph",
+            )
 
-            # build once
-            graph = fn(GRAPH_NAMES_REGISTERY[agent_id], llm)
+            if session_id:
+                await ws_manager_graph.send(
+                    session_id,
+                    build_graph_execution_message(
+                        graph_execution,
+                        status="started",
+                        extra={"entrypoint_node": agent_id.upper()},
+                    ),
+                )
 
-            result = await graph.ainvoke(state, config=enriched_config)
-            return result
+            try:
+                # build once
+                graph = fn(child_graph_name, llm)
+
+                result = await graph.ainvoke(state, config=enriched_config)
+            except Exception as error:
+                if session_id:
+                    status = "paused" if error.__class__.__name__ == "GraphInterrupt" else "failed"
+                    await ws_manager_graph.send(
+                        session_id,
+                        build_graph_execution_message(
+                            graph_execution,
+                            status=status,
+                            error=error,
+                            extra={"entrypoint_node": agent_id.upper()},
+                        ),
+                    )
+                raise
+            except BaseException as error:
+                if session_id and error.__class__.__name__ == "GraphInterrupt":
+                    await ws_manager_graph.send(
+                        session_id,
+                        build_graph_execution_message(
+                            graph_execution,
+                            status="paused",
+                            error=error,
+                            extra={"entrypoint_node": agent_id.upper()},
+                        ),
+                    )
+                raise
+            else:
+                if session_id:
+                    await ws_manager_graph.send(
+                        session_id,
+                        build_graph_execution_message(
+                            graph_execution,
+                            status="completed",
+                            result=result,
+                            extra={"entrypoint_node": agent_id.upper()},
+                        ),
+                    )
+
+                return result
 
         return wrapper
 

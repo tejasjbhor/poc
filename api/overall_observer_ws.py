@@ -3,14 +3,12 @@ import json
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from langgraph.types import Command
-from datetime import datetime, timezone
 
-from graphs.overall_observer_graph import build_overall_observer_graph
-from graphs.system_definition_graph import build_system_definition_graph
-
-from services.llm.llm_config import get_chat_model
-from registeries.graph_registery import GRAPH_NAMES_REGISTERY
 from api.ws_manager_graph import ws_manager_graph
+from graphs.overall_observer_graph import build_overall_observer_graph
+from registeries.graph_registery import GRAPH_NAMES_REGISTERY
+from services.llm.llm_config import get_chat_model
+from utils.execution_events import begin_graph_execution, build_graph_execution_message
 from utils.serializers import normalize_finished_event, normalize_graph_event
 
 
@@ -30,6 +28,11 @@ seen_interrupt_ids = set()
 # Graph execution
 # -------------------
 async def start_graph(session_id: str, data: dict):
+    graph_execution = begin_graph_execution(_graph_name, session_id, trigger="start")
+    await ws_manager_graph.send(
+        session_id,
+        build_graph_execution_message(graph_execution, status="started"),
+    )
 
     state = {
         # "step": "DECIDE_ROUTE",
@@ -43,59 +46,109 @@ async def start_graph(session_id: str, data: dict):
         }
     }
 
-    async for update in graph.astream(
-        state,
-        config=config,
-        subgraphs=True,
-        version="v2",
-    ):
-        clean = normalize_graph_event(update["data"], seen_interrupt_ids)
+    try:
+        async for update in graph.astream(
+            state,
+            config=config,
+            subgraphs=True,
+            version="v2",
+        ):
+            clean = normalize_graph_event(update["data"], seen_interrupt_ids)
 
-        if clean is None:
-            continue
+            if clean is None:
+                continue
 
-        await ws_manager_graph.send(session_id, clean)
+            await ws_manager_graph.send(session_id, clean)
+
+            if clean.get("type") == "interrupt" and clean.get("graph_name") == _graph_name:
+                await ws_manager_graph.send(
+                    session_id,
+                    build_graph_execution_message(graph_execution, status="paused"),
+                )
+    except Exception as error:
+        await ws_manager_graph.send(
+            session_id,
+            build_graph_execution_message(
+                graph_execution,
+                status="failed",
+                error=error,
+            ),
+        )
+        raise
 
 
 async def handle_resume(session_id: str, data: dict):
     interrupt_id = data.get("interrupt_id")
     value = data.get("value")
+    graph_execution = begin_graph_execution(_graph_name, session_id, trigger="resume")
+    await ws_manager_graph.send(
+        session_id,
+        build_graph_execution_message(graph_execution, status="started"),
+    )
+
     config = {
         "configurable": {
             "thread_id": session_id,
             "graph_name": _graph_name,
         }
     }
-    async for update in graph.astream(
-        Command(
-            resume={"interrupt_id": interrupt_id, "raw_user_input": value},
-        ),
-        config=config,
-        subgraphs=True,
-        version="v2",
-    ):
-        # TODO Not a clean solution, to be improved
-        if "__interrupt__" in update["data"]:
-            step = None
-            step_graph_name = None
-        else:
-            node_name, payload = next(iter(update["data"].items()))  # 👈 step 1
-            step = payload.get("step") or payload.get("next_step")  # 👈 step 2
-            step_graph_name = payload["graph_name"]
 
-        if step == "FINAL":
-            snapshot = await graph.aget_state(config=config)
-            state = snapshot.values
-            if state.get("graph_name") != _graph_name:
-                await normalize_finished_event(session_id, state, step_graph_name)
-            continue
+    try:
+        async for update in graph.astream(
+            Command(
+                resume={"interrupt_id": interrupt_id, "raw_user_input": value},
+            ),
+            config=config,
+            subgraphs=True,
+            version="v2",
+        ):
+            if "__interrupt__" in update["data"]:
+                step = None
+                step_graph_name = None
+            else:
+                node_name, payload = next(iter(update["data"].items()))
+                step = payload.get("step") or payload.get("next_step")
+                step_graph_name = payload["graph_name"]
 
-        clean = normalize_graph_event(update["data"], seen_interrupt_ids)
+            if step == "FINAL":
+                snapshot = await graph.aget_state(config=config)
+                state = snapshot.values
 
-        if clean is None:
-            continue
+                if state.get("graph_name") != _graph_name:
+                    await normalize_finished_event(session_id, state, step_graph_name)
+                else:
+                    await ws_manager_graph.send(
+                        session_id,
+                        build_graph_execution_message(
+                            graph_execution,
+                            status="completed",
+                            result=state,
+                        ),
+                    )
+                continue
 
-        await ws_manager_graph.send(session_id, clean)
+            clean = normalize_graph_event(update["data"], seen_interrupt_ids)
+
+            if clean is None:
+                continue
+
+            await ws_manager_graph.send(session_id, clean)
+
+            if clean.get("type") == "interrupt" and clean.get("graph_name") == _graph_name:
+                await ws_manager_graph.send(
+                    session_id,
+                    build_graph_execution_message(graph_execution, status="paused"),
+                )
+    except Exception as error:
+        await ws_manager_graph.send(
+            session_id,
+            build_graph_execution_message(
+                graph_execution,
+                status="failed",
+                error=error,
+            ),
+        )
+        raise
 
 
 # -------------------
