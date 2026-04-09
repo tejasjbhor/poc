@@ -76,23 +76,8 @@ Rules:
 - Do not finalize anything
 - Keep assumptions minimal and explicit
 - Generate function IDs as: f1, f2, f3, ...
-- Output a valid json structure only, with no text before the { and after the }
 
-Output:
-{
-  "detected_format": "json" | "text",
-  "system_description": "string",
-  "system_functions": [
-    {
-      "id": "string",
-      "name": "string",
-      "description": "string",
-      "surface_area": null,
-      "interfaces_in": [{"function_id": "string", "materials": []}],
-      "interfaces_out": [{"function_id": "string", "materials": []}]
-    }
-  ],
-  "assumptions": []
+You are returning a structured object matching the schema.
 }
 """.strip(),
     "prompt_request_function_refinement": """
@@ -100,27 +85,7 @@ You are a senior system design reviewer helping the user refine a system specifi
 
 You are given the current state of the system:
 
-SYSTEM DESCRIPTION:
-{system_description}
-
-SYSTEM FUNCTIONS:
-{system_functions}
-
-ASSUMPTIONS:
-{assumptions}
-
-For context, the structre of System Functions is : 
-"system_functions": [
-    {
-      "id": "string",
-      "name": "string",
-      "description": "string",
-      "surface_area": null,
-      "interfaces_in": [{"function_id": "string", "materials": []}],
-      "interfaces_out": [{"function_id": "string", "materials": []}]
-    }
-  ]
----
+- current_system_definition: {current_system_definition}
 
 YOUR ROLE:
 
@@ -166,21 +131,10 @@ Use this format:
 
 {
   "modifications": [
-    {
-      "id": "function_id",
-      "field": "name | description | interface | assumptions",
-      "new_value": "proposed corrected value"
-    }
   ],
   "additions": [
-    {
-      "name": "",
-      "description": "",
-      "interface": {}
-    }
   ],
   "deletions": [
-    "function_id"
   ]
 }
 
@@ -196,9 +150,7 @@ IMPORTANT RULES:
 You are updating the system functions based on user feedback.
 
 Input variables:
-- current_system_description: {system_description} 
-- current_system_functions: {system_functions}
-- current_assumptions: {assumptions}
+- current_system_definition: {current_system_definition}
 - user_feedback: {user_refinment_feedback}
 
 Your task:
@@ -209,20 +161,6 @@ Your task:
    - valid interface references
 4. Integrate additions and deletions if provided
 
-Return JSON only:
-{
-  "system_description": "string",
-  "system_functions": [
-    {
-      "id": "string",
-      "name": "string",
-      "description": "string",
-      "surface_area": null,
-      "interfaces_in": [{"function_id": "string", "materials": []}],
-      "interfaces_out": [{"function_id": "string", "materials": []}]
-    }
-  ],
-  "assumptions": []
-}
+You are returning a structured object matching the schema.
 """.strip(),
 }

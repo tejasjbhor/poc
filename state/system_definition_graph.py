@@ -1,13 +1,15 @@
-from typing import List, Optional
+from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
-from schemas.system_schemas import SystemFunction
+from schemas.graphs.system_definition.output import SystemDefinitionOutput
 from state.shared_nodes_states.context_definition_node import ExecutionContext
 
 
 class SystemDefinitionState(BaseModel):
-    model_config = ConfigDict(extra="allow")  # IMPORTANT for LangGraph compatibility
+    model_config = ConfigDict(
+        extra="allow", arbitrary_types_allowed=True
+    )  # IMPORTANT for LangGraph compatibility
 
     # LLM → user
     question: Optional[str] = None
@@ -21,9 +23,7 @@ class SystemDefinitionState(BaseModel):
     interpreted_input: Optional[str] = None
 
     # Graph Outputs
-    system_description: Optional[str] = None
-    system_functions: Optional[List[SystemFunction]] = Field(default_factory=list)
-    assumptions: Optional[List[str]] = Field(default_factory=list)
+    system_definition: Optional[SystemDefinitionOutput] = None
 
     # Control flags
     execution_context: Optional[ExecutionContext] = None

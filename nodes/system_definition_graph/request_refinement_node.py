@@ -5,6 +5,7 @@ from langchain.messages import HumanMessage, SystemMessage
 from helpers.interpret_user_input import is_done_user_input
 from helpers.llm_safe_invoke import safe_llm_invoke
 from prompts.system_definition_prompts import SYSTEM_DEFINITION_PROMPTS
+from schemas.graphs.system_definition.output import SystemDefinitionOutput
 from state.system_definition_graph import SystemDefinitionState
 
 from langgraph.types import interrupt
@@ -24,9 +25,11 @@ def request_refinement_node(state: SystemDefinitionState, config, llm):
                 HumanMessage(
                     content=json.dumps(
                         {
-                            "system_description": state.system_description,
-                            "system_functions": [f.model_dump() for f in state.system_functions],
-                            "assumptions": state.assumptions or [],
+                            "current_system_definition": (
+                                state.system_definition.model_dump()
+                                if state.system_definition
+                                else None
+                            ),
                         }
                     )
                 ),
@@ -34,6 +37,7 @@ def request_refinement_node(state: SystemDefinitionState, config, llm):
         )
 
         question = response.content
+
     else:
         question = state.refinement_question
 
@@ -49,9 +53,7 @@ def request_refinement_node(state: SystemDefinitionState, config, llm):
                 "refinement_question": question,
                 "user_refinment_feedback": user_refinment_feedback["raw_user_input"],
                 "step": "FINAL",
-                "system_description": state.system_description,
-                "system_functions": state.system_functions,
-                "assumptions": state.assumptions or [],
+                "system_definition": state.system_definition,
                 "graph_name": graph_name,
             }
         )

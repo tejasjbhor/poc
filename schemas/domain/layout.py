@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class Coordinates(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="allow")  # IMPORTANT for LangGraph compatibility
 
     x: float
     y: float
@@ -13,7 +13,7 @@ class Coordinates(BaseModel):
 
 
 class LayoutConnection(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="allow")  # IMPORTANT for LangGraph compatibility
 
     connected_component_id: str
     direction: Literal["up", "down", "left", "right", "bidirectional"]
@@ -22,7 +22,7 @@ class LayoutConnection(BaseModel):
 
 
 class LayoutNode(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="allow")  # IMPORTANT for LangGraph compatibility
 
     id: str
     function_name: str
@@ -33,7 +33,7 @@ class LayoutNode(BaseModel):
 
 
 class LayoutRationale(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="allow")  # IMPORTANT for LangGraph compatibility
 
     organizing_principle: Optional[str] = None
     major_adjacency_choices: Optional[List[str]] = None
@@ -42,7 +42,7 @@ class LayoutRationale(BaseModel):
 
 
 class LayoutConstraints(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="allow")  # IMPORTANT for LangGraph compatibility
 
     hard: Optional[List[str]] = None
     soft: Optional[List[str]] = None

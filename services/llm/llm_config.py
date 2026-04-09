@@ -49,7 +49,9 @@ def get_chat_model() -> Any:
     )
     from langchain_anthropic import ChatAnthropic
 
-    return ChatAnthropic(model=model, anthropic_api_key=key, max_tokens=4096)
+    return ChatAnthropic(
+        model=model, anthropic_api_key=key, max_tokens=4096, temperature=0
+    )
 
 
 def _retryable_llm_error(exc: BaseException) -> bool:

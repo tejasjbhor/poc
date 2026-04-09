@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from api.ws_manager_graph import ws_manager_graph
 from helpers.interrupt_normalizer import normalize_interrupts
 from registeries.graph_ws_serializers import GRAPH_WS_SERIALIZERS
+from schemas.graphs.system_definition.output import SystemDefinitionOutput
 
 
 def normalize_graph_event(update, seen_interrupt_ids=None):
@@ -24,6 +25,8 @@ def normalize_graph_event(update, seen_interrupt_ids=None):
 
 async def normalize_finished_event(session_id, state):
     graph_name = state.get("execution_context").get("current_graph")
+    system_definition: SystemDefinitionOutput = state.get("system_definition")
+
     if graph_name == "system_definition":
         return await ws_manager_graph.send(
             session_id,
@@ -31,9 +34,9 @@ async def normalize_finished_event(session_id, state):
                 "type": "finished",
                 "graph_name": graph_name,
                 "data": {
-                    "system_description": state.get("system_description"),
-                    "system_functions": state.get("system_functions"),
-                    "assumptions": state.get("assumptions"),
+                    "system_description": system_definition.get("system_description"),
+                    "system_functions": system_definition.get("system_functions"),
+                    "assumptions": system_definition.get("assumptions"),
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                 },
             },

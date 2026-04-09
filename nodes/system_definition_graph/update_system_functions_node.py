@@ -4,6 +4,7 @@ from langchain.messages import HumanMessage, SystemMessage
 
 from helpers.llm_safe_invoke import safe_llm_invoke
 from prompts.system_definition_prompts import SYSTEM_DEFINITION_PROMPTS
+from schemas.graphs.system_definition.output import SystemDefinitionOutput
 from state.system_definition_graph import SystemDefinitionState
 from utils.json_utils import coerce_json
 
@@ -20,35 +21,21 @@ def update_system_functions_node(state: SystemDefinitionState, config, llm):
                 content=json.dumps(
                     {
                         "user_refinment_feedback": state.user_refinment_feedback,
-                        "system_description": state.system_description,
-                        "system_functions": [
-                            f.model_dump() for f in state.system_functions or []
-                        ],
-                        "assumptions": state.assumptions,
+                        "current_system_definition": (
+                            state.system_definition.model_dump()
+                            if state.system_definition
+                            else None
+                        ),
                     }
                 )
             ),
         ],
+        response_model=SystemDefinitionOutput,
     )
-
-    raw_llm_interpretation = response.content
-
-    try:
-        parsed_llm_interpretation = coerce_json(raw_llm_interpretation)
-    except Exception:
-        parsed_llm_interpretation = {}
 
     return state.model_copy(
         update={
-            "system_functions": parsed_llm_interpretation.get(
-                "system_functions", state.system_functions
-            ),
-            "assumptions": parsed_llm_interpretation.get(
-                "assumptions", state.assumptions
-            ),
-            "system_description": parsed_llm_interpretation.get(
-                "system_description", state.system_description
-            ),
+            "system_definition": response,
             # 🔁 go back to interpret
             "graph_name": graph_name,
         }

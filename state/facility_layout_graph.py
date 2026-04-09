@@ -1,13 +1,13 @@
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict, Field
 
-from schemas.layout_schemas import (
+from schemas.domain.layout import (
     Coordinates,
     LayoutConstraints,
     LayoutNode,
     LayoutRationale,
 )
-from schemas.system_schemas import SystemFunction
+from schemas.domain.system import SystemFunction
 from state.shared_nodes_states.context_definition_node import ExecutionContext
 
 

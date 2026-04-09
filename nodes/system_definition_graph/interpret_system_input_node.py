@@ -4,8 +4,8 @@ from langchain.messages import HumanMessage, SystemMessage
 
 from helpers.llm_safe_invoke import safe_llm_invoke
 from prompts.system_definition_prompts import SYSTEM_DEFINITION_PROMPTS
+from schemas.graphs.system_definition.output import SystemDefinitionOutput
 from state.system_definition_graph import SystemDefinitionState
-from utils.json_utils import coerce_json
 
 
 def interpret_system_input_node(state: SystemDefinitionState, config, llm):
@@ -20,22 +20,13 @@ def interpret_system_input_node(state: SystemDefinitionState, config, llm):
             SystemMessage(content=prompt),
             HumanMessage(content=json.dumps({"first_user_description": raw_input})),
         ],
+        response_model=SystemDefinitionOutput,
     )
-
-    raw_llm_interpretation = response.content
-    try:
-        parsed_llm_interpretation = coerce_json(raw_llm_interpretation)
-    except Exception:
-        parsed_llm_interpretation = {}
 
     return state.model_copy(
         update={
-            "interpreted_input": raw_llm_interpretation,
-            "system_functions": parsed_llm_interpretation.get("system_functions", []),
-            "assumptions": parsed_llm_interpretation.get("assumptions", []),
-            "system_description": parsed_llm_interpretation.get(
-                "system_description", ""
-            ),
+            "interpreted_input": response.model_dump_json(),
+            "system_definition": response,
             "graph_name": graph_name,
         }
     )

@@ -1,10 +1,13 @@
 import time
 
 
-def safe_llm_invoke(llm, messages, max_retries=3):
+def safe_llm_invoke(llm, messages, response_model=None, max_retries=3):
     for attempt in range(max_retries):
-        # TODO use structured output
         try:
+            if response_model:
+                structured_llm = llm.with_structured_output(response_model)
+                return structured_llm.invoke(messages)
+
             return llm.invoke(messages)
         except Exception as e:
             if "overloaded" in str(e).lower():

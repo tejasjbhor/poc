@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+from schemas.graphs.system_definition.output import SystemDefinitionOutput
+
 
 def _handle_system_definition(node_name, payload):
 
@@ -22,14 +24,15 @@ def _handle_system_definition(node_name, payload):
 
     # 2. INTERPRETATION → show as message (NOT interrupt)
     if node_name == "UPDATE_SYSTEM_FUNCTIONS":
+        system_definition: SystemDefinitionOutput = payload.get("system_definition")
         return {
             "type": "data",  # ⚠️ better than "message" for structured data
             "node": node_name,
             "graph_name": payload.get("graph_name"),
             "data": {
-                "system_description": payload.get("system_description"),
-                "system_functions": payload.get("system_functions"),
-                "assumptions": payload.get("assumptions"),
+                "system_description": system_definition.system_description,
+                "system_functions": system_definition.system_functions,
+                "assumptions": system_definition.assumptions,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             },
         }
