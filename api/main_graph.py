@@ -1,10 +1,10 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.layout_ws import layout_router
-from api.system_definition_ws import system_definition_router
-from api.internet_search_ws import internet_search_router
-from api.overall_observer_ws import overall_observer_router
+from api.router.layout_ws import layout_router
+from api.router.system_definition_ws import system_definition_router
+from api.router.internet_search_ws import internet_search_router
+from api.router.overall_observer_ws import overall_observer_router
 
 app = FastAPI()
 
