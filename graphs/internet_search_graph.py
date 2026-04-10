@@ -137,7 +137,7 @@ def build_internet_search_graph(graph_name, llm):
     # 🔁 System understanding loop
     builder.add_conditional_edges(
         "VALIDATE_SYSTEM_INPUT",
-        lambda s: s["step"],
+        lambda s: s.step,
         {
             "INTERPRET_SYSTEM_INPUT": "INTERPRET_SYSTEM_INPUT",  # user edited → re-interpret
             "GENERATE_QUERIES": "GENERATE_QUERIES",  # approved → continue
@@ -147,7 +147,7 @@ def build_internet_search_graph(graph_name, llm):
     # 🔁 Query validation loop
     builder.add_conditional_edges(
         "VALIDATE_QUERIES",
-        lambda s: s["step"],
+        lambda s: s.step,
         {
             "GENERATE_QUERIES": "GENERATE_QUERIES",  # refine queries
             "SEARCH_SOURCES": "SEARCH_SOURCES",  # approved
@@ -157,7 +157,7 @@ def build_internet_search_graph(graph_name, llm):
     # 🔁 Final validation loop (VERY IMPORTANT)
     builder.add_conditional_edges(
         "FINAL_VALIDATION",
-        lambda s: s["step"],
+        lambda s: s.step,
         {
             "GENERATE_QUERIES": "GENERATE_QUERIES",  # refine everything
             "SEARCH_SOURCES": "SEARCH_SOURCES",  # rerun search

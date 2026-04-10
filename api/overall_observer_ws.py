@@ -4,6 +4,7 @@ import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from langgraph.types import Command
 
+from bootstrap.bootstrap_agents import create_agents_registry
 from graphs.overall_observer_graph import build_overall_observer_graph
 
 from services.llm.llm_config import get_chat_model
@@ -17,10 +18,12 @@ overall_observer_router = APIRouter()
 
 _graph_name = GRAPH_NAMES_REGISTERY["overall_observer"]
 
+
+agents_registry = create_agents_registry()
 # -------------------
 # Build graph ONCE
 # -------------------
-graph = build_overall_observer_graph(_graph_name, get_chat_model())
+graph = build_overall_observer_graph(agents_registry, _graph_name, get_chat_model())
 
 seen_interrupt_ids = set()
 
@@ -34,7 +37,10 @@ async def start_graph(session_id: str, data: dict):
         "configurable": {
             "thread_id": session_id,
             "graph_name": _graph_name,
-        }
+        },
+        "runtime": {
+            "agent_registry": agents_registry,
+        },
     }
 
     async for update in graph.astream(
@@ -59,7 +65,10 @@ async def handle_resume(session_id: str, data: dict):
         "configurable": {
             "thread_id": session_id,
             "graph_name": _graph_name,
-        }
+        },
+        "runtime": {
+            "agent_registry": agents_registry,
+        },
     }
     async for update in graph.astream(
         Command(

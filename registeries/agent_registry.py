@@ -1,102 +1,93 @@
-"""Agent registry: ids, node import paths, defaults."""
-
 from __future__ import annotations
-import importlib
+
+from typing import Dict, List
+
+from langgraph.graph import END
+
+from schemas.agents.agent_spec import AgentSpec
+from domain.agents.agent_runtime import AgentRuntime
 
 
-from registeries.graph_registery import GRAPH_NAMES_REGISTERY
+class AgentRegistry:
+    def __init__(self):
+        self._agents: Dict[str, AgentRuntime] = {}
 
-AGENTS: dict[str, dict] = {
-    "system_definition": {
-        "display_name": "System Definition",
-        "node_fn": "graphs.system_definition_graph.build_system_definition_graph",
-        "type": "graph",
-        "default_phase": "phase_layout",
-        "runs_at_start": False,
-        "description": "Getting system description and functions from user.",
-    },
-    "internet_search": {
-        "display_name": "Internet Search Agent",
-        "node_fn": "graphs.internet_search_graph.build_internet_search_graph",
-        "type": "graph",
-        "default_phase": "phase_layout",
-        "runs_at_start": False,
-        "description": "Searching the internet for a particular system.",
-    },
-    "layout": {
-        "display_name": "Layout Agent",
-        "node_fn": "graphs.layout_graph.build_facility_layout_graph",
-        "type": "graph",
-        "default_phase": "phase_layout",
-        "runs_at_start": False,
-        "description": "Generate a 2D layout for a given system.",
-    },
-}
+    # -------------------------
+    # Register
+    # -------------------------
+    def register(self, spec: AgentSpec):
+        self._agents[spec.agent_id] = AgentRuntime(spec)
 
+    # -------------------------
+    # Getters
+    # -------------------------
+    def get(self, agent_id: str) -> AgentRuntime:
+        return self._agents[agent_id]
 
-def get_display_name(agent_id: str) -> str:
-    entry = AGENTS.get(agent_id)
-    if entry:
-        return entry["display_name"]
-    return agent_id.replace("_", " ").title()
+    def all(self) -> List[AgentRuntime]:
+        return list(self._agents.values())
 
+    def ids(self) -> List[str]:
+        return list(self._agents.keys())
 
-def get_start_agents() -> list[str]:
-    return [aid for aid, cfg in AGENTS.items() if cfg.get("runs_at_start")]
-
-
-def get_all_agent_ids() -> list[str]:
-    return list(AGENTS.keys())
-
-
-def get_default_active_agent_id() -> str:
-    starts = get_start_agents()
-    if starts:
-        return starts[0]
-    ids = get_all_agent_ids()
-    return ids[0] if ids else ""
-
-
-def load_callable(path: str):
-    module_path, fn_name = path.rsplit(".", 1)
-    module = importlib.import_module(module_path)
-    return getattr(module, fn_name)
-
-
-def resolve_callable(agent_id: str, llm):
-    entry = AGENTS[agent_id]
-    fn = load_callable(entry["node_fn"])
-
-    if entry.get("type") == "graph":
-
-        async def wrapper(state, config):
-            enriched_config = dict(config or {})
-            enriched_config.setdefault("configurable", {})
-            enriched_config["configurable"] = {
-                **enriched_config["configurable"],
-                "graph_name": GRAPH_NAMES_REGISTERY[agent_id],
+    def list_routes(self):
+        return [
+            {
+                "id": agent.spec.agent_id.upper(),
+                "description": agent.spec.description,
             }
+            for agent in self._agents.values()
+        ]
 
-            # build once
-            graph = fn(GRAPH_NAMES_REGISTERY[agent_id], llm)
-
-            result = await graph.ainvoke(state, config=enriched_config)
-            return result
-
-        return wrapper
-
-    return fn
-
-
-def get_default_agent_states() -> dict:
-    states = {}
-    for agent_id, cfg in AGENTS.items():
-        states[agent_id] = {
-            "status": "active" if cfg.get("runs_at_start") else "idle",
-            "phase": cfg.get("default_phase", ""),
-            "turn_count": 0,
-            "covered": [],
-            "pending": [],
-            "last_output": None,
+    def get_route_map(self):
+        routes = {
+            agent.spec.agent_id.upper(): agent.spec.agent_id.upper()
+            for agent in self._agents.values()
         }
-    return states
+
+        routes["DECIDE_ROUTE"] = "DECIDE_ROUTE"
+        routes["FINAL"] = END
+
+        return routes
+
+    def serialize_agents(registry):
+        agents = []
+
+        for a in registry.all():
+            agents.append(
+                {
+                    "agent_id": a.agent_id,
+                    "description": a.description,
+                    "produces_data": list(a.produces_data),
+                    "fixes_data": list(a.fixes_data),
+                }
+            )
+
+        return agents
+
+    # -------------------------
+    # Discovery logic
+    # -------------------------
+    def start_agents(self) -> List[AgentRuntime]:
+        return [a for a in self._agents.values() if a.spec.runs_at_start]
+
+    def default_agent_id(self) -> str:
+        starts = self.start_agents()
+        if starts:
+            return starts[0].spec.agent_id
+        return next(iter(self._agents), "")
+
+    # -------------------------
+    # LangGraph integration
+    # -------------------------
+    def resolve(self, agent_id: str, llm):
+        return self._agents[agent_id].resolve(llm)
+
+    # -------------------------
+    # State initialization
+    # -------------------------
+    def default_states(self) -> dict:
+        return {
+            agent_id: runtime.default_state()
+            for agent_id, runtime in self._agents.items()
+        }

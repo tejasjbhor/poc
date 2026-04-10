@@ -1,30 +1,30 @@
-from typing import TypedDict, List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional
 
+from pydantic import BaseModel, ConfigDict, Field
+
+from schemas.graphs.internet_search.output import InternetSearchOutput
 from state.shared_nodes_states.context_definition_node import ExecutionContext
 
 
-class InternetSearchState(TypedDict):
-    # --- initial input ---
-    question: Optional[str]
-    raw_user_input: Optional[str]
+class InternetSearchState(BaseModel):
+    model_config = ConfigDict(extra="allow")  # IMPORTANT for LangGraph compatibility
 
-    # --- system understanding ---
-    system_understanding: Dict[str, Any]
+    # --- initial input ---
+    question: Optional[str] = None
+    raw_user_input: Optional[str] = None
 
     # --- query phase ---
-    queries: List[str]
-    user_queries_refinment: Optional[str]
+    user_queries_refinment: Optional[str] = None
 
     # --- retrieval phase ---
-    raw_results: Dict[str, Any]
+    raw_results: Dict[str, Any] = Field(default_factory=dict)
 
     # --- extraction phase ---
-    candidates: List[Dict[str, Any]]
+    candidates: List[Dict[str, Any]] = Field(default_factory=list)
 
     # --- ranking phase ---
-    ranked_candidates: List[Dict[str, Any]]
-
+    internet_search_outcome: Optional[InternetSearchOutput] = None
     # --- control ---
-    execution_context: ExecutionContext
-    step: str
-    graph_name: str
+    execution_context: Optional[ExecutionContext] = None
+    step: Optional[str] = None
+    graph_name: Optional[str] = None

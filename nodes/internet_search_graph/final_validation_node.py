@@ -11,6 +11,7 @@ from prompts.internet_search_prompts import INTERNET_SEARCH_PROMPTS
 
 
 def final_validation_node(state: InternetSearchState, config, llm):
+    graph_name = getattr(state.execution_context, "current_graph", None)
     # prompt = INTERNET_SEARCH_PROMPTS["prompt_final_validation"]
 
     # question = safe_llm_invoke(
@@ -31,14 +32,16 @@ def final_validation_node(state: InternetSearchState, config, llm):
     # question = "Validate the ranked results, describe any modifications you wish to have, or type done to end the process."
 
     # user_action = interrupt(question)
-    
+
     # if not is_done_user_input(user_action["raw_user_input"]):
     #     return {
     #         "ranked_candidates": user_action["raw_user_input"],
     #         "step": "GENERATE_QUERIES",
     #     }
 
-    return {
-        "graph_name": config["configurable"]["graph_name"],
-        "step": "FINAL",
-    }
+    return state.model_copy(
+        update={
+            "graph_name": graph_name,
+            "step": "FINAL",
+        }
+    )

@@ -1,5 +1,5 @@
-from typing import Optional
-from pydantic import BaseModel, ConfigDict
+from typing import List, Optional
+from pydantic import BaseModel, ConfigDict, Field
 
 from schemas.graphs.layout.input import LayoutInput
 from schemas.graphs.layout.output import LayoutOutput
@@ -30,6 +30,10 @@ class FacilityLayoutState(BaseModel):
     # OUTPUT LAYOUT GRAPH
     # =========================
     final_layout: Optional[LayoutOutput] = None
+
+    # --- Hydration Request ---
+    hydration_issues: Optional[List] = Field(default_factory=list)
+    hydration_requester: Optional[str] = None
 
     # =========================
     # CONTROL

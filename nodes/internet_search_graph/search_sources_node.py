@@ -1,13 +1,18 @@
 import asyncio
 
 from registeries.internet_search_unified_tool_registery import INTERNET_SEARCH_TOOLS
+from schemas.graphs.internet_search.output import InternetSearchOutput
 from state.internet_search_graph import InternetSearchState
 
 tools = INTERNET_SEARCH_TOOLS
 
 
 async def search_sources_node(state: InternetSearchState, config):
-    queries = state.get("queries", [])
+    internet_search_outcome = (
+        state.internet_search_outcome or InternetSearchOutput()
+    )
+    queries = internet_search_outcome.queries
+    graph_name = getattr(state.execution_context, "current_graph", None)
 
     raw_results = {
         "arxiv": [],
@@ -57,7 +62,9 @@ async def search_sources_node(state: InternetSearchState, config):
     for tool_name, payload in results:
         raw_results[tool_name].append(payload)
 
-    return {
-        "raw_results": raw_results,
-        "graph_name": config["configurable"]["graph_name"],
-    }
+    return state.model_copy(
+        update={
+            "raw_results": raw_results,
+            "graph_name": graph_name,
+        }
+    )

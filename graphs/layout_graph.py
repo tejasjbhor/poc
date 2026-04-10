@@ -113,6 +113,7 @@ def build_facility_layout_graph(graph_name, llm):
         {
             "COLLECT_INPUT": "COLLECT_INPUT",
             "COLLECT_CONSTRAINTS": "COLLECT_CONSTRAINTS",
+            "REQUEST_DATA_FROM_MAIN": END,
         },
     )
 

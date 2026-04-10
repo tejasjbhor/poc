@@ -5,13 +5,8 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 
-from schemas.domain.layout import (
-    Coordinates,
-    LayoutConstraints,
-    LayoutNode,
-    LayoutRationale,
-)
-from schemas.domain.system import SystemFunction
+from schemas.graphs.internet_search.output import InternetSearchOutput
+from schemas.graphs.layout.output import LayoutOutput
 from schemas.graphs.system_definition.output import SystemDefinitionOutput
 from state.shared_nodes_states.context_definition_node import ExecutionContext
 
@@ -28,22 +23,20 @@ class OverallObserverState(BaseModel):
     # =========================
     # LAYOUT GRAPH
     # =========================
-    layout: Optional[List[LayoutNode]] = None
-    layout_status: Optional[str] = None
-    total_area: Optional[float] = None
-    facility_coordinates: Optional[Coordinates] = None
-    layout_user_feedback: Optional[str] = None
-    layout_rationale: Optional[LayoutRationale] = None
-    layout_constraints: Optional[LayoutConstraints] = None
-    layout_status: Optional[str] = None
+    final_layout: Optional[LayoutOutput] = None
 
-    # --- Internet Search ---
-    system_understanding: Dict[str, Any] = Field(default_factory=dict)
-    queries: List[str] = Field(default_factory=list)
-    ranked_candidates: List[Dict[str, Any]] = Field(default_factory=list)
+    # =========================
+    # INTERNET SEARCH GRAPH
+    # =========================
+    internet_search_outcome: Optional[InternetSearchOutput] = None
 
     # --- Execution Context ---
     execution_context: Optional[ExecutionContext] = None
+
+    # --- Hydration Request ---
+    hydration_issues: Optional[List] = Field(default_factory=list)
+    hydration_requester: Optional[str] = None
+    reasoning: Optional[str] = None
 
     # --- Graph Control ---
     last_step: Optional[str] = None

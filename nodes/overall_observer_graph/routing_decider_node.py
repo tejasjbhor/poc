@@ -1,38 +1,16 @@
+from helpers.overall_observer_router_helper import hydration_routing, manual_routing
+from registeries.agent_registry import AgentRegistry
 from state.overall_observer_graph import OverallObserverState
-from langgraph.types import interrupt
 
 
 def routing_decider_node(state: OverallObserverState, config, llm):
+    hydration_request = state.hydration_issues
     graph_name = getattr(state.execution_context, "current_graph", None)
-
-    question = """**Hey! 👋**
-
-    What would you like to do today?
-
-    **1. Define system of interest**
-    **2. Perform advanced web search for a certain functionality**
-    **3. Create a 2D layout of the system**
-
-    ➡️ *Please pick one to proceed.*
-"""
-    user_input = interrupt({"question": question, "graph_name": graph_name})
-    next_step = None
-
-    match user_input["raw_user_input"].strip():
-        case "1":
-            next_step = "SYSTEM_DEFINITION"
-        case "2":
-            next_step = "INTERNET_SEARCH"
-        case "3":
-            next_step = "LAYOUT"
-        case _:
-            next_step = None
-
-    return state.model_copy(
-        update={
-            "last_step": state.step,
-            "step": state.next_step,
-            "next_step": next_step,
-            "graph_name": graph_name,
-        }
+    agent_registry: AgentRegistry = (
+        config.get("configurable").get("runtime").get("agent_registry")
     )
+
+    if hydration_request:
+        return hydration_routing(state, llm, graph_name, agent_registry)
+
+    return manual_routing(state, llm, graph_name, agent_registry)

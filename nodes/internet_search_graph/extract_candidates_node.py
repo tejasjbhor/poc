@@ -10,6 +10,11 @@ from utils.json_utils import coerce_json
 
 def extract_candidates_node(state: InternetSearchState, config, llm):
     prompt = INTERNET_SEARCH_PROMPTS["prompt_extract_candidates"]
+    graph_name = getattr(state.execution_context, "current_graph", None)
+
+    system_understanding = getattr(
+        state.internet_search_outcome, "system_understanding", None
+    )
 
     response = safe_llm_invoke(
         llm,
@@ -18,8 +23,8 @@ def extract_candidates_node(state: InternetSearchState, config, llm):
             HumanMessage(
                 content=json.dumps(
                     {
-                        "system_understanding": state.get("system_understanding", {}),
-                        "raw_results": state.get("raw_results", {}),
+                        "system_understanding": system_understanding,
+                        "candidates": state.raw_results or {},
                     }
                 )
             ),
@@ -27,7 +32,9 @@ def extract_candidates_node(state: InternetSearchState, config, llm):
     )
     parsed = coerce_json(response.content)
 
-    return {
-        "candidates": parsed,
-        "graph_name": config["configurable"]["graph_name"],
-    }
+    return state.model_copy(
+        update={
+            "candidates": parsed,
+            "graph_name": graph_name,
+        }
+    )

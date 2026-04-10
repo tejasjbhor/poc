@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from schemas.graphs.internet_search.output import InternetSearchOutput
 from schemas.graphs.layout.output import LayoutOutput
 from schemas.graphs.system_definition.output import SystemDefinitionOutput
 
@@ -57,19 +58,21 @@ def _handle_internet_search(node_name, payload):
             "data": payload.get("execution_context"),
         }
     if node_name == "INTERPRET_SYSTEM_INPUT":
+        internet_search_outcome : InternetSearchOutput = payload.get("internet_search_outcome")
         return {
             "type": "data",
             "node": node_name,
             "graph_name": payload.get("graph_name"),
-            "data": payload.get("system_understanding"),
+            "data": internet_search_outcome.system_understanding,
         }
 
     if node_name == "GENERATE_QUERIES":
+        internet_search_outcome : InternetSearchOutput = payload.get("internet_search_outcome")
         return {
             "type": "data",
             "node": node_name,
             "graph_name": payload.get("graph_name"),
-            "data": payload.get("queries"),
+            "data": internet_search_outcome.queries,
         }
 
     if node_name == "SEARCH_SOURCES":
@@ -89,11 +92,12 @@ def _handle_internet_search(node_name, payload):
         }
 
     if node_name == "RANK_CANDIDATES":
+        internet_search_outcome : InternetSearchOutput = payload.get("internet_search_outcome")
         return {
             "type": "data",
             "node": node_name,
             "graph_name": payload.get("graph_name"),
-            "data": payload.get("ranked_candidates"),
+            "data": internet_search_outcome.ranked_candidates,
         }
 
     # return {
@@ -115,7 +119,7 @@ def _handle_layout(node_name, payload):
 
     if node_name == "NORMALIZE_INPUT":
         system_definition: SystemDefinitionOutput = payload.get("system_definition")
-        
+
         return {
             "type": "data",
             "node": node_name,
@@ -129,7 +133,7 @@ def _handle_layout(node_name, payload):
 
     if node_name == "GENERATE_LAYOUT":
         final_layout: LayoutOutput = payload.get("final_layout")
-        
+
         return {
             "type": "data",
             "node": node_name,
@@ -142,6 +146,19 @@ def _handle_layout(node_name, payload):
                 "layout_version": "0",
             },
         }
+
+    if node_name == "HYDRATE_LAYOUT":
+        hydration_issues = payload.get("hydration_issues")
+        if hydration_issues:
+            return {
+                "type": "message",
+                "node": node_name,
+                "graph_name": payload.get("graph_name"),
+                "data": {
+                    "message": "Missing data, requesting completion from main graph",
+                    "hydration_issues": hydration_issues,
+                },
+            }
 
     # fallback (safety)
     # return {
@@ -160,9 +177,28 @@ def _handle_overall_observer(node_name, payload):
             "graph_name": payload.get("graph_name"),
             "data": payload.get("execution_context"),
         }
-    return {
-        "type": "data",
-        "node": node_name,
-        "graph_name": payload.get("graph_name"),
-        "data": payload,
-    }
+
+    if node_name == "DECIDE_ROUTE":
+        hydration_issues = payload.get("hydration_issues")
+        if hydration_issues:
+            return {
+                "type": "message",
+                "node": node_name,
+                "graph_name": payload.get("graph_name"),
+                "data": {
+                    "message": "Hydration request, from "
+                    + payload.get("hydration_requester")
+                    + ", rerouting to "
+                    + payload.get("next_step"),
+                    "requester": payload.get("hydration_requester"),
+                    "hydration_issues": hydration_issues,
+                    "reasoning": payload.get("reasoning"),
+                    "next_step": payload.get("next_step"),
+                },
+            }
+    # return {
+    #     "type": "data",
+    #     "node": node_name,
+    #     "graph_name": payload.get("graph_name"),
+    #     "data": payload,
+    # }

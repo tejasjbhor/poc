@@ -14,6 +14,12 @@ You must:
 4. Highlight ambiguities and missing information
 5. Avoid hallucinating precise technical details
 
+Optional Input: 
+System Understanding : {system_understanding}
+User Input : {raw_user_input}
+
+If these two input are provided, refine system undesrtanding based on user input
+
 Rules:
 - Be conservative in assumptions
 - If something is unclear, mark it as uncertain

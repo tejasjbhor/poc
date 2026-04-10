@@ -10,6 +10,7 @@ from services.llm.llm_config import get_chat_model
 from registeries.graph_registery import GRAPH_NAMES_REGISTERY
 from api.ws_manager_graph import ws_manager_graph
 from utils.serializers import normalize_finished_event, normalize_graph_event
+from utils.ws_to_json_safe import ws_to_json_safe
 
 
 internet_search_router = APIRouter()
@@ -43,6 +44,7 @@ async def start_graph(session_id: str, data: dict):
         if clean is None:
             continue
 
+        clean = ws_to_json_safe(clean)
         await ws_manager_graph.send(session_id, clean)
 
 
@@ -82,7 +84,8 @@ async def handle_resume(session_id: str, data: dict):
         if step == "FINAL":
             snapshot = await graph.aget_state(config=config)
             state = snapshot.values
-            await normalize_finished_event(session_id, state)
+            safe_state = ws_to_json_safe(snapshot.values)
+            await normalize_finished_event(session_id, safe_state)
             continue
 
         clean = normalize_graph_event(update)
@@ -90,6 +93,7 @@ async def handle_resume(session_id: str, data: dict):
         if clean is None:
             continue
 
+        clean = ws_to_json_safe(clean)
         await ws_manager_graph.send(session_id, clean)
 
 
