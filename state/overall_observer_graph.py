@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from schemas.graphs.internet_search.output import InternetSearchOutput
 from schemas.graphs.layout.output import LayoutOutput
 from schemas.graphs.system_definition.output import SystemDefinitionOutput
-from state.shared_nodes_states.context_definition_node import ExecutionContext
+from schemas.domain.context_definition_node import ExecutionContext
 
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List, Dict, Any

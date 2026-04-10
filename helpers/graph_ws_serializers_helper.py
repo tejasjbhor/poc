@@ -9,7 +9,7 @@ def _handle_system_definition(node_name, payload):
 
     if node_name == "EXECUTION_CONTEXT_DEFINITION":
         return {
-            "type": "data",
+            "type": "execution",
             "node": node_name,
             "graph_name": payload.get("graph_name"),
             "data": payload.get("execution_context"),
@@ -17,11 +17,16 @@ def _handle_system_definition(node_name, payload):
 
     # 2. INTERPRETATION → show as message (NOT interrupt)
     if node_name == "INTERPRET_SYSTEM_INPUT":
+        system_definition: SystemDefinitionOutput = payload.get("system_definition")
         return {
-            "type": "message",
+            "type": "data",
             "node": node_name,
             "graph_name": payload.get("graph_name"),
-            "data": payload.get("interpreted_input"),
+            "data": {
+                "system_description": system_definition.system_description,
+                "system_functions": system_definition.system_functions,
+                "assumptions": system_definition.assumptions,
+            },
         }
 
     # 2. INTERPRETATION → show as message (NOT interrupt)
@@ -52,13 +57,15 @@ def _handle_internet_search(node_name, payload):
 
     if node_name == "EXECUTION_CONTEXT_DEFINITION":
         return {
-            "type": "data",
+            "type": "execution",
             "node": node_name,
             "graph_name": payload.get("graph_name"),
             "data": payload.get("execution_context"),
         }
     if node_name == "INTERPRET_SYSTEM_INPUT":
-        internet_search_outcome : InternetSearchOutput = payload.get("internet_search_outcome")
+        internet_search_outcome: InternetSearchOutput = payload.get(
+            "internet_search_outcome"
+        )
         return {
             "type": "data",
             "node": node_name,
@@ -67,7 +74,9 @@ def _handle_internet_search(node_name, payload):
         }
 
     if node_name == "GENERATE_QUERIES":
-        internet_search_outcome : InternetSearchOutput = payload.get("internet_search_outcome")
+        internet_search_outcome: InternetSearchOutput = payload.get(
+            "internet_search_outcome"
+        )
         return {
             "type": "data",
             "node": node_name,
@@ -92,7 +101,9 @@ def _handle_internet_search(node_name, payload):
         }
 
     if node_name == "RANK_CANDIDATES":
-        internet_search_outcome : InternetSearchOutput = payload.get("internet_search_outcome")
+        internet_search_outcome: InternetSearchOutput = payload.get(
+            "internet_search_outcome"
+        )
         return {
             "type": "data",
             "node": node_name,
@@ -111,7 +122,7 @@ def _handle_internet_search(node_name, payload):
 def _handle_layout(node_name, payload):
     if node_name == "EXECUTION_CONTEXT_DEFINITION":
         return {
-            "type": "data",
+            "type": "execution",
             "node": node_name,
             "graph_name": payload.get("graph_name"),
             "data": payload.get("execution_context"),
@@ -170,9 +181,12 @@ def _handle_layout(node_name, payload):
 
 
 def _handle_overall_observer(node_name, payload):
-    if node_name == "EXECUTION_CONTEXT_DEFINITION":
+    if (
+        node_name == "EXECUTION_CONTEXT_DEFINITION"
+        or node_name == "NORMALIZE_EXECUTION_CONTEXT"
+    ):
         return {
-            "type": "data",
+            "type": "execution",
             "node": node_name,
             "graph_name": payload.get("graph_name"),
             "data": payload.get("execution_context"),

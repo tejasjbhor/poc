@@ -25,7 +25,6 @@ def interpret_system_input_node(state: SystemDefinitionState, config, llm):
 
     return state.model_copy(
         update={
-            "interpreted_input": response.model_dump_json(),
             "system_definition": response,
             "graph_name": graph_name,
         }

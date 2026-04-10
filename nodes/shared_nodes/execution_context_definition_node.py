@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from helpers.ensure_execution_context import ensure_execution_context
-from state.shared_nodes_states.context_definition_node import ExecutionContext
+from schemas.domain.context_definition_node import ExecutionContext
 
 
 def execution_context_definition_node(

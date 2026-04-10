@@ -3,7 +3,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from schemas.graphs.layout.input import LayoutInput
 from schemas.graphs.layout.output import LayoutOutput
-from state.shared_nodes_states.context_definition_node import ExecutionContext
+from schemas.domain.context_definition_node import ExecutionContext
 
 
 class FacilityLayoutState(BaseModel):

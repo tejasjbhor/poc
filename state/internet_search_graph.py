@@ -3,7 +3,7 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from schemas.graphs.internet_search.output import InternetSearchOutput
-from state.shared_nodes_states.context_definition_node import ExecutionContext
+from schemas.domain.context_definition_node import ExecutionContext
 
 
 class InternetSearchState(BaseModel):

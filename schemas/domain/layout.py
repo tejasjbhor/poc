@@ -1,6 +1,6 @@
-from typing import Optional, List, Literal
+from typing import Annotated, Optional, List, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Coordinates(BaseModel):
@@ -16,7 +16,10 @@ class LayoutConnection(BaseModel):
     model_config = ConfigDict(extra="allow")  # IMPORTANT for LangGraph compatibility
 
     connected_component_id: str
-    direction: Literal["up", "down", "left", "right", "bidirectional"]
+    direction: Annotated[
+        Literal["up", "down", "left", "right", "bidirectional"] | None,
+        Field(description="Direction of the connection between the two functions."),
+    ] = None
     shared_materials: Optional[List[str]] = None
     connection_weight: Optional[float] = None
 
