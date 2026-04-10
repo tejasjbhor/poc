@@ -3,8 +3,10 @@ from __future__ import annotations
 import importlib
 from typing import Callable, Optional, Any
 
+from api import ws_manager_graph
 from registeries.graph_registery import GRAPH_NAMES_REGISTERY
 from schemas.agents.agent_spec import AgentSpec
+from utils.execution_events import begin_graph_execution, build_graph_execution_message
 
 
 class AgentRuntime:
@@ -37,21 +39,116 @@ class AgentRuntime:
     # -------------------------
     def resolve(self, llm):
 
-        # Non-graph agent (direct callable)
+        # -------------------------
+        # Non-graph agent
+        # -------------------------
         if self.spec.type != "graph":
             return self.load_callable()
 
+        # -------------------------
+        # Graph agent
+        # -------------------------
         async def wrapper(state, config):
             enriched_config = dict(config or {})
             enriched_config.setdefault("configurable", {})
 
+            configurable = enriched_config["configurable"]
+            session_id = configurable.get("thread_id")
+
+            graph_name = GRAPH_NAMES_REGISTERY[self.spec.agent_id]
+
             enriched_config["configurable"] = {
-                **enriched_config["configurable"],
-                "graph_name": GRAPH_NAMES_REGISTERY[self.spec.agent_id],
+                **configurable,
+                "graph_name": graph_name,
             }
 
-            graph = self.build_graph(llm)
-            return await graph.ainvoke(state, config=enriched_config)
+            # -------------------------
+            # Build execution metadata
+            # -------------------------
+            graph_execution = begin_graph_execution(
+                graph_name,
+                session_id,
+                trigger="subgraph",
+            )
+
+            # -------------------------
+            # Broadcast START
+            # -------------------------
+            if session_id:
+                await ws_manager_graph.send(
+                    session_id,
+                    build_graph_execution_message(
+                        graph_execution,
+                        status="started",
+                        extra={"entrypoint_node": self.spec.agent_id.upper()},
+                    ),
+                )
+
+            try:
+                # -------------------------
+                # Build graph (cache it)
+                # -------------------------
+                if not hasattr(self, "_graph") or self._graph is None:
+                    self._graph = self.build_graph(llm)
+
+                result = await self._graph.ainvoke(state, config=enriched_config)
+
+            except Exception as error:
+                # -------------------------
+                # Handle failure / pause
+                # -------------------------
+                if session_id:
+                    status = (
+                        "paused"
+                        if error.__class__.__name__ == "GraphInterrupt"
+                        else "failed"
+                    )
+
+                    await ws_manager_graph.send(
+                        session_id,
+                        build_graph_execution_message(
+                            graph_execution,
+                            status=status,
+                            error=error,
+                            extra={"entrypoint_node": self.spec.agent_id.upper()},
+                        ),
+                    )
+
+                raise
+
+            except BaseException as error:
+                # -------------------------
+                # Handle special interrupts
+                # -------------------------
+                if session_id and error.__class__.__name__ == "GraphInterrupt":
+                    await ws_manager_graph.send(
+                        session_id,
+                        build_graph_execution_message(
+                            graph_execution,
+                            status="paused",
+                            error=error,
+                            extra={"entrypoint_node": self.spec.agent_id.upper()},
+                        ),
+                    )
+
+                raise
+
+            else:
+                # -------------------------
+                # Broadcast SUCCESS
+                # -------------------------
+                if session_id:
+                    await ws_manager_graph.send(
+                        session_id,
+                        build_graph_execution_message(
+                            graph_execution,
+                            status="completed",
+                            result=result,
+                            extra={"entrypoint_node": self.spec.agent_id.upper()},
+                        ),
+                    )
+
+                return result
 
         return wrapper
 

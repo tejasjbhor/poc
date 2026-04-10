@@ -4,11 +4,11 @@ import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from langgraph.types import Command
 
-from graphs.internet_search_graph import build_internet_search_graph
-
-from services.llm.llm_config import get_chat_model
-from registeries.graph_registery import GRAPH_NAMES_REGISTERY
 from api.ws_manager_graph import ws_manager_graph
+from graphs.internet_search_graph import build_internet_search_graph
+from registeries.graph_registery import GRAPH_NAMES_REGISTERY
+from services.llm.llm_config import get_chat_model
+from utils.execution_events import begin_graph_execution, build_graph_execution_message
 from utils.serializers import normalize_finished_event, normalize_graph_event
 from utils.ws_to_json_safe import ws_to_json_safe
 
@@ -27,6 +27,11 @@ graph = build_internet_search_graph(_graph_name, get_chat_model())
 # Graph execution
 # -------------------
 async def start_graph(session_id: str, data: dict):
+    graph_execution = begin_graph_execution(_graph_name, session_id, trigger="start")
+    await ws_manager_graph.send(
+        session_id,
+        build_graph_execution_message(graph_execution, status="started"),
+    )
 
     config = {
         "configurable": {
@@ -35,17 +40,37 @@ async def start_graph(session_id: str, data: dict):
         }
     }
 
-    async for update in graph.astream(
-        {},
-        config=config,
-    ):
-        clean = normalize_graph_event(update)
+    try:
+        async for update in graph.astream(
+            {},
+            config=config,
+        ):
+            clean = normalize_graph_event(update)
 
-        if clean is None:
-            continue
+            if clean is None:
+                continue
 
-        clean = ws_to_json_safe(clean)
-        await ws_manager_graph.send(session_id, clean)
+            clean = ws_to_json_safe(clean)
+            await ws_manager_graph.send(session_id, clean)
+
+            if (
+                clean.get("type") == "interrupt"
+                and clean.get("graph_name") == _graph_name
+            ):
+                await ws_manager_graph.send(
+                    session_id,
+                    build_graph_execution_message(graph_execution, status="paused"),
+                )
+    except Exception as error:
+        await ws_manager_graph.send(
+            session_id,
+            build_graph_execution_message(
+                graph_execution,
+                status="failed",
+                error=error,
+            ),
+        )
+        raise
 
 
 # -------------------
@@ -54,6 +79,11 @@ async def start_graph(session_id: str, data: dict):
 async def handle_resume(session_id: str, data: dict):
     interrupt_id = data.get("interrupt_id")
     value = data.get("value")
+    graph_execution = begin_graph_execution(_graph_name, session_id, trigger="resume")
+    await ws_manager_graph.send(
+        session_id,
+        build_graph_execution_message(graph_execution, status="started"),
+    )
 
     config = {
         "configurable": {
@@ -62,39 +92,63 @@ async def handle_resume(session_id: str, data: dict):
         }
     }
 
-    async for update in graph.astream(
-        Command(
-            resume={
-                "interrupt_id": interrupt_id,
-                "raw_user_input": value,
-            },
-        ),
-        config=config,
-    ):
-        # 🔍 detect step
-        if "__interrupt__" in update:
-            step = None
-        else:
-            node_name, payload = next(iter(update.items()))
-            step = payload.get("step")
+    try:
+        async for update in graph.astream(
+            Command(
+                resume={
+                    "interrupt_id": interrupt_id,
+                    "raw_user_input": value,
+                },
+            ),
+            config=config,
+        ):
+            if "__interrupt__" in update:
+                step = None
+            else:
+                node_name, payload = next(iter(update.items()))
+                step = payload.get("step")
 
-        # =========================
-        # FINAL OUTPUT
-        # =========================
-        if step == "FINAL":
-            snapshot = await graph.aget_state(config=config)
-            state = snapshot.values
-            safe_state = ws_to_json_safe(snapshot.values)
-            await normalize_finished_event(session_id, safe_state)
-            continue
+            if step == "FINAL":
+                snapshot = await graph.aget_state(config=config)
+                state = snapshot.values
+                safe_state = ws_to_json_safe(snapshot.values)
+                await ws_manager_graph.send(
+                    session_id,
+                    build_graph_execution_message(
+                        graph_execution,
+                        status="completed",
+                        result=safe_state,
+                    ),
+                )
+                await normalize_finished_event(session_id, state)
+                continue
 
-        clean = normalize_graph_event(update)
+            clean = normalize_graph_event(update)
 
-        if clean is None:
-            continue
+            if clean is None:
+                continue
 
-        clean = ws_to_json_safe(clean)
-        await ws_manager_graph.send(session_id, clean)
+            clean = ws_to_json_safe(clean)
+            await ws_manager_graph.send(session_id, clean)
+
+            if (
+                clean.get("type") == "interrupt"
+                and clean.get("graph_name") == _graph_name
+            ):
+                await ws_manager_graph.send(
+                    session_id,
+                    build_graph_execution_message(graph_execution, status="paused"),
+                )
+    except Exception as error:
+        await ws_manager_graph.send(
+            session_id,
+            build_graph_execution_message(
+                graph_execution,
+                status="failed",
+                error=error,
+            ),
+        )
+        raise
 
 
 # -------------------
