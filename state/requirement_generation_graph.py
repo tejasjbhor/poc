@@ -22,7 +22,6 @@ class RequirementGenerationState(TypedDict):
 
     # LLM outputs
     requirements: Optional[List[GeneratedRequirement]]
-    open_questions: Optional[List[str]]
 
     # Control (conditional_edges from REQUEST_REQUIREMENTS_REVIEW)
     step: Optional[str]

@@ -86,3 +86,17 @@ async def normalize_finished_event(session_id, state, graph_name):
                 },
             },
         )
+
+    if graph_name == "requirement_generation":
+        return await ws_manager_graph.send(
+            session_id,
+            {
+                "type": "finished",
+                "graph_name": graph_name,
+                "data": {
+                    "selected_function_id": state.get("selected_function_id"),
+                    "requirements": state.get("requirements"),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                },
+            },
+        )

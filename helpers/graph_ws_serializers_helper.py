@@ -122,6 +122,31 @@ def _handle_layout(node_name, payload):
     # }
 
 
+def _handle_requirement_generation(node_name, payload):
+
+    if node_name == "REQUEST_FUNCTION_SELECTION":
+        return {
+            "type": "data",
+            "node": node_name,
+            "graph_name": payload.get("graph_name"),
+            "data": {
+                "selected_function_id": payload.get("selected_function_id"),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+        }
+
+    if node_name in ("GENERATE_REQUIREMENTS", "UPDATE_REQUIREMENTS"):
+        return {
+            "type": "data",
+            "node": node_name,
+            "graph_name": payload.get("graph_name"),
+            "data": {
+                "requirements": payload.get("requirements"),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+        }
+
+
 def _handle_overall_observer(node_name, payload):
 
     return {
