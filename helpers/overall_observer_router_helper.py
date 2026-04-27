@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 
 from langchain.messages import HumanMessage, SystemMessage
@@ -8,7 +9,6 @@ from registeries.agent_registry import AgentRegistry
 from langgraph.types import interrupt
 
 from state.overall_observer_graph import OverallObserverState
-from utils.json_utils import coerce_json
 
 
 def manual_routing(
@@ -43,36 +43,7 @@ def manual_routing(
             "last_step": state.step,
             "step": state.next_step,
             "next_step": next_step,
-            "graph_name": graph_name,
-        }
-    )
-
-
-def hydration_routing(state: OverallObserverState, llm, graph_name, registry: AgentRegistry):
-    agents = registry.list_routes()
-
-    prompt = OVERALL_OBSERVER_PROMPTS["pick_data_fixer_agent"]
-
-    response = safe_llm_invoke(
-        llm,
-        [
-            SystemMessage(content=prompt),
-            HumanMessage(
-                content=json.dumps(
-                    {"hydration_issues": state.hydration_issues, "agents": agents}
-                )
-            ),
-        ],
-    )
-
-    routing = coerce_json(response.content)
-    print("llm agent id", routing)
-    return state.model_copy(
-        update={
-            "next_step": routing.get("agent_id"),
-            "reasoning": routing.get("reasoning"),
-            "last_step": state.step,
-            "step": state.next_step,
+            "_emit": datetime.now(),
             "graph_name": graph_name,
         }
     )

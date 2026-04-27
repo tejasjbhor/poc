@@ -4,9 +4,15 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import InMemorySaver
 
 from helpers.log_node import log_node
+from nodes.internet_search_graph.collect_function_input_node import (
+    collect_function_input_node,
+)
 from nodes.internet_search_graph.extract_candidates_node import extract_candidates_node
 from nodes.internet_search_graph.final_validation_node import final_validation_node
 from nodes.internet_search_graph.generate_queries_node import generate_queries_node
+from nodes.internet_search_graph.hydrate_internet_search_node import (
+    hydrate_internet_search_node,
+)
 from nodes.internet_search_graph.interpret_system_input_node import (
     interpret_system_input_node,
 )
@@ -19,7 +25,9 @@ from nodes.internet_search_graph.validate_queries_node import validate_queries_n
 from nodes.internet_search_graph.validate_system_input_node import (
     validate_system_input_node,
 )
-from nodes.shared_nodes.execution_context_definition_node import execution_context_definition_node
+from nodes.shared_nodes.execution_context_definition_node import (
+    execution_context_definition_node,
+)
 from state.internet_search_graph import InternetSearchState
 
 
@@ -36,6 +44,24 @@ def build_internet_search_graph(graph_name, llm):
             graph_name,
             "EXECUTION_CONTEXT_DEFINITION",
             partial(execution_context_definition_node),
+        ),
+    )
+
+    builder.add_node(
+        "HYDRATE_LAYOUT",
+        log_node(
+            graph_name,
+            "HYDRATE_LAYOUT",
+            partial(hydrate_internet_search_node),
+        ),
+    )
+
+    builder.add_node(
+        "COLLECT_FUNCTION_INPUT",
+        log_node(
+            graph_name,
+            "COLLECT_FUNCTION_INPUT",
+            partial(collect_function_input_node, llm=llm),
         ),
     )
 
@@ -115,12 +141,13 @@ def build_internet_search_graph(graph_name, llm):
     # Entry
     # =========================
     builder.add_edge(START, "EXECUTION_CONTEXT_DEFINITION")
-    builder.add_edge("EXECUTION_CONTEXT_DEFINITION", "REQUEST_SYSTEM_INPUT")
+    builder.add_edge("EXECUTION_CONTEXT_DEFINITION", "HYDRATE_LAYOUT")
 
     # =========================
     # Linear Flow
     # =========================
 
+    builder.add_edge("COLLECT_FUNCTION_INPUT", "INTERPRET_SYSTEM_INPUT")
     builder.add_edge("REQUEST_SYSTEM_INPUT", "INTERPRET_SYSTEM_INPUT")
     builder.add_edge("INTERPRET_SYSTEM_INPUT", "VALIDATE_SYSTEM_INPUT")
 
@@ -133,6 +160,16 @@ def build_internet_search_graph(graph_name, llm):
     # =========================
     # Conditional Routing (STEP-DRIVEN)
     # =========================
+
+    builder.add_conditional_edges(
+        "HYDRATE_LAYOUT",
+        lambda s: s.step,
+        {
+            "COLLECT_FUNCTION_INPUT": "COLLECT_FUNCTION_INPUT",
+            "REQUEST_SYSTEM_INPUT": "REQUEST_SYSTEM_INPUT",
+            "REQUEST_DATA_FROM_MAIN": END,
+        },
+    )
 
     # 🔁 System understanding loop
     builder.add_conditional_edges(

@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     session_ttl_seconds: int = 14400
 
     app_host: str = "0.0.0.0"
-    app_port: int = 8000
+    app_port: int = 8800
     log_level: str = "INFO"
 
     max_pdf_size_mb: int = 50

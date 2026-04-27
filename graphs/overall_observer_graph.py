@@ -41,7 +41,7 @@ def build_overall_observer_graph(agents_registry, graph_name, llm):
         log_node(
             graph_name,
             "NORMALIZE_EXECUTION_CONTEXT",
-            partial(normalize_execution_context_node),
+            partial(normalize_execution_context_node, llm=llm),
         ),
     )
 

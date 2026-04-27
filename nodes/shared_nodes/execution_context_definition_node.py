@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, Dict
 
 from helpers.ensure_execution_context import ensure_execution_context
@@ -63,5 +64,6 @@ def execution_context_definition_node(
         update={
             "execution_context": execution_context,
             "graph_name": current_graph,
+            "_emit": datetime.now(),
         }
     )

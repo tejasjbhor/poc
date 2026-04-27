@@ -35,6 +35,19 @@ OUTPUT FORMAT:
   "uncertainties": ["string"]
 }
 """.strip(),
+    "prompt_collect_function_input": """
+You are starting an internet research workflow.
+
+You will get a system definition, containing system description and a list of functions.
+
+System Definition : {system_definition}
+
+Ask the user to give you the id of the function they want to research.
+
+Be concise and clear.
+
+The input will be used to generate search queries and find technical solutions.
+""".strip(),
     "prompt_request_system_input": """
 You are starting an internet research workflow.
 

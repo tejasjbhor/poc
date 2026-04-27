@@ -1,21 +1,24 @@
+from schemas.graphs.internet_search.input import InternetSearchInput
 from schemas.graphs.layout.input import LayoutInput
-from state.facility_layout_graph import FacilityLayoutState
+from state.internet_search_graph import InternetSearchState
 
 
-def hydrate_layout_graph_node(state: FacilityLayoutState, config):
+def hydrate_internet_search_node(state: InternetSearchState, config):
     graph_name = getattr(state.execution_context, "current_graph", None)
     mode = state.execution_context.mode
-    system_definition: LayoutInput = state.system_definition or LayoutInput()
+    system_definition: InternetSearchInput = (
+        state.system_definition or InternetSearchInput()
+    )
 
     if mode == "standalone":
         return state.model_copy(
             update={
-                "step": "COLLECT_INPUT",
+                "step": "REQUEST_SYSTEM_INPUT",
                 "graph_name": graph_name,
             }
         )
 
-    def get_missing_fields(sd: LayoutInput) -> list[str]:
+    def get_missing_fields(sd: InternetSearchInput) -> list[str]:
         missing = []
 
         # --- schema-driven checks ---
@@ -27,15 +30,6 @@ def hydrate_layout_graph_node(state: FacilityLayoutState, config):
             elif isinstance(value, list) and len(value) == 0:
                 missing.append(field)
 
-        # --- domain rules ---
-        if sd.assumptions and len(sd.assumptions) <= 1:
-            missing.append("assumptions_too_few")
-
-        if sd.system_functions:
-            for i, f in enumerate(sd.system_functions):
-                if f.surface_area == 0:
-                    missing.append(f"function_{f.id or i}_surface_area_zero")
-
         return missing
 
     missing_fields = get_missing_fields(system_definition)
@@ -43,7 +37,7 @@ def hydrate_layout_graph_node(state: FacilityLayoutState, config):
     if not missing_fields:
         return state.model_copy(
             update={
-                "step": "COLLECT_CONSTRAINTS",
+                "step": "COLLECT_FUNCTION_INPUT",
                 "graph_name": graph_name,
             }
         )

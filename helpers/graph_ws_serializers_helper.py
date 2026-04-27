@@ -7,14 +7,6 @@ from schemas.graphs.system_definition.output import SystemDefinitionOutput
 
 def _handle_system_definition(node_name, payload):
 
-    if node_name == "EXECUTION_CONTEXT_DEFINITION":
-        return {
-            "type": "execution",
-            "node": node_name,
-            "graph_name": payload.get("graph_name"),
-            "data": payload.get("execution_context"),
-        }
-
     # 2. INTERPRETATION → show as message (NOT interrupt)
     if node_name == "INTERPRET_SYSTEM_INPUT":
         system_definition: SystemDefinitionOutput = payload.get("system_definition")
@@ -55,13 +47,6 @@ def _handle_system_definition(node_name, payload):
 
 def _handle_internet_search(node_name, payload):
 
-    if node_name == "EXECUTION_CONTEXT_DEFINITION":
-        return {
-            "type": "execution",
-            "node": node_name,
-            "graph_name": payload.get("graph_name"),
-            "data": payload.get("execution_context"),
-        }
     if node_name == "INTERPRET_SYSTEM_INPUT":
         internet_search_outcome: InternetSearchOutput = payload.get(
             "internet_search_outcome"
@@ -120,12 +105,17 @@ def _handle_internet_search(node_name, payload):
 
 
 def _handle_layout(node_name, payload):
-    if node_name == "EXECUTION_CONTEXT_DEFINITION":
+
+    if node_name == "COLLECT_CONSTRAINTS":
+        layout_output: LayoutOutput = payload.get("final_layout")
+
         return {
-            "type": "execution",
+            "type": "data",
             "node": node_name,
             "graph_name": payload.get("graph_name"),
-            "data": payload.get("execution_context"),
+            "data": {
+                "constraints": layout_output.layout_constraints,
+            },
         }
 
     if node_name == "NORMALIZE_INPUT":
@@ -185,11 +175,15 @@ def _handle_overall_observer(node_name, payload):
         node_name == "EXECUTION_CONTEXT_DEFINITION"
         or node_name == "NORMALIZE_EXECUTION_CONTEXT"
     ):
+        print("emitting", node_name)
         return {
-            "type": "execution",
+            "type": "data",
             "node": node_name,
             "graph_name": payload.get("graph_name"),
-            "data": payload.get("execution_context"),
+            "data": {
+                "execution_stack": payload.get("execution_stack"),
+                "execution_context": payload.get("execution_context"),
+            },
         }
 
     if node_name == "DECIDE_ROUTE":
